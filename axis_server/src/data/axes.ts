@@ -1,5 +1,5 @@
 import type { Axis } from '../types';
-import { axisLabels, getAxisLabelsByDifficulty } from './axisLabels';
+import { getAxisLabelsByDifficulty } from './axisLabels';
 import { generateSeed } from '../utils/seedGenerator';
 
 // 軸の組み合わせを生成する関数

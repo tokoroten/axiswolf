@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { axes, generateAxis } from '../data/axes';
-import { axisLabels, getAxisLabelsByDifficulty } from '../data/axisLabels';
+import { generateAxis } from '../data/axes';
+import { getAxisLabelsByDifficulty } from '../data/axisLabels';
 import { mutators } from '../data/mutators';
 import { generateSeed } from '../utils/seedGenerator';
 import type { Axis } from '../types';

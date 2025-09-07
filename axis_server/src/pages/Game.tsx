@@ -531,7 +531,6 @@ export default function Game() {
                   <div className="text-xs mb-1" style={{ color: categoryColors[card.category] }}>
                     {card.category === 'food' ? '食べ物' :
                      card.category === 'item' ? 'アイテム' :
-                     card.category === 'character' ? 'キャラ' :
                      card.category === 'place' ? '場所' : '概念'}
                   </div>
                   <div className="text-sm font-bold text-gray-800">

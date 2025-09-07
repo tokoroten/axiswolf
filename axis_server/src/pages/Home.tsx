@@ -9,6 +9,7 @@ export default function Home() {
   const [playerCount, setPlayerCount] = useState(4);
   const [selectedPlayerId, setSelectedPlayerId] = useState(1);
   const [gameMode, setGameMode] = useState<'normal' | 'expert'>('normal');
+  const [isOnlineMode, setIsOnlineMode] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [showQR, setShowQR] = useState(false);
@@ -20,6 +21,7 @@ export default function Home() {
     const savedPlayerCount = localStorage.getItem('playerCount');
     const savedPlayerId = localStorage.getItem('playerId');
     const savedGameMode = localStorage.getItem('gameMode');
+    const savedIsOnlineMode = localStorage.getItem('isOnlineMode');
     
     if (savedKeyword) {
       setKeyword(savedKeyword);
@@ -32,6 +34,9 @@ export default function Home() {
     }
     if (savedGameMode) {
       setGameMode(savedGameMode as 'normal' | 'expert');
+    }
+    if (savedIsOnlineMode) {
+      setIsOnlineMode(savedIsOnlineMode === 'true');
     }
     
     // 現在のページURLのQRコードを生成
@@ -64,7 +69,20 @@ export default function Home() {
     localStorage.setItem('playerCount', playerCount.toString());
     localStorage.setItem('playerId', selectedPlayerId.toString());
     localStorage.setItem('gameMode', gameMode);
-    navigate(`/game?keyword=${encodeURIComponent(keyword)}&pid=${selectedPlayerId}&mode=${gameMode}`);
+    localStorage.setItem('isOnlineMode', isOnlineMode.toString());
+    
+    // URLパラメータを構築
+    const params = new URLSearchParams({
+      keyword: keyword,
+      pid: selectedPlayerId.toString(),
+      mode: gameMode
+    });
+    
+    if (isOnlineMode) {
+      params.append('online', 'true');
+    }
+    
+    navigate(`/game?${params.toString()}`);
   };
 
   return (
@@ -154,6 +172,38 @@ export default function Home() {
               >
                 <div className="font-bold">インテリ向け</div>
                 <div className="text-xs mt-1">専門知識が必要な軸も含む</div>
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              プレイモード
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setIsOnlineMode(false)}
+                className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                  !isOnlineMode
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="font-bold">通常プレイ</div>
+                <div className="text-xs mt-1">実物のカードを使用</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOnlineMode(true)}
+                className={`px-4 py-3 rounded-lg font-medium transition-colors ${
+                  isOnlineMode
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                <div className="font-bold">オンラインプレイ</div>
+                <div className="text-xs mt-1">デジタルカードを使用</div>
               </button>
             </div>
           </div>

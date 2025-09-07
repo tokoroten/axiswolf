@@ -321,7 +321,7 @@ export default function Game() {
                 const originalAxis = generateAxis(roundSeed, currentRound, gameMode);
                 
                 // ウルフを決定
-                const zureshaPlayerId = (roundSeed % playerCount) + 1;
+                // const zureshaPlayerId = (roundSeed % playerCount) + 1;
                 
                 // ズレシードからミューテーター情報を取得
                 const zureSeed = generateSeed(`${keyword}-${currentRound}-zure`);
@@ -417,7 +417,7 @@ export default function Game() {
         {isHost && (() => {
           // ラウンドシード生成（プレイヤーと同じロジック）
           const roundSeed = generateSeed(`${keyword}-${currentRound}`);
-          const originalAxis = generateAxis(roundSeed, currentRound, gameMode);
+          // const originalAxis = generateAxis(roundSeed, currentRound, gameMode);
           
           // ウルフを決定
           const zureshaPlayerId = (roundSeed % playerCount) + 1;
@@ -430,10 +430,10 @@ export default function Game() {
           const startPlayerInfo = getPlayerName(startPlayerId);
           
           // ズレシードからミューテーター情報を取得
-          const zureSeed = generateSeed(`${keyword}-${currentRound}-zure`);
-          const mutatorIndex = zureSeed % mutators.length;
-          const selectedMutator = mutators[mutatorIndex];
-          const mutatedAxis = applyMutator(originalAxis, selectedMutator, zureSeed, originalAxis);
+          // const zureSeed = generateSeed(`${keyword}-${currentRound}-zure`);
+          // const mutatorIndex = zureSeed % mutators.length;
+          // const selectedMutator = mutators[mutatorIndex];
+          // const mutatedAxis = applyMutator(originalAxis, selectedMutator, zureSeed, originalAxis);
           
           return (
             <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-6 mb-6">
@@ -572,17 +572,17 @@ export default function Game() {
                           key={card.id}
                           className="bg-gray-50 rounded p-2 border text-xs"
                           style={{
-                            borderColor: categoryColors[card.category],
+                            borderColor: card?.category ? categoryColors[card.category] : '#ccc',
                           }}
                         >
-                          <div className="text-xs" style={{ color: categoryColors[card.category] }}>
-                            {card.category === 'food' ? '食' :
-                             card.category === 'item' ? '物' :
-                             card.category === 'character' ? 'キ' :
-                             card.category === 'place' ? '場' : '概'}
+                          <div className="text-xs" style={{ color: card?.category ? categoryColors[card.category] : '#666' }}>
+                            {card?.category === 'food' ? '食' :
+                             card?.category === 'item' ? '物' :
+                             card?.category === 'character' ? 'キ' :
+                             card?.category === 'place' ? '場' : '概'}
                           </div>
                           <div className="font-bold text-gray-700 truncate">
-                            {card.name}
+                            {card?.name || 'カード'}
                           </div>
                         </div>
                       ))}
@@ -599,7 +599,7 @@ export default function Game() {
 
         {/* スタートプレイヤー表示（非ホスト用） */}
         {!isHost && (() => {
-          const roundSeed = generateSeed(`${keyword}-${currentRound}`);
+          // const roundSeed = generateSeed(`${keyword}-${currentRound}`);
           const startPlayerSeed = generateSeed(`${keyword}-${currentRound}-start`);
           const startPlayerId = (startPlayerSeed % playerCount) + 1;
           const startPlayerInfo = getPlayerName(startPlayerId);

@@ -235,7 +235,7 @@ export default function Host() {
                 <h2 className="text-xl font-bold">プレイヤー用QRコード</h2>
                 <button
                   onClick={async () => {
-                    const allUrls = playerQRs.map((player, index) => 
+                    const allUrls = playerQRs.map((player) => 
                       `${getPlayerName(player.id).name}: ${player.url}`
                     ).join('\n');
                     try {

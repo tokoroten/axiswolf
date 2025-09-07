@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { playerNames } from '../data/playerNames';
 import RulesModal from '../components/RulesModal';
+import QRCode from 'qrcode';
 
 export default function Home() {
   const [keyword, setKeyword] = useState('');
@@ -9,6 +10,8 @@ export default function Home() {
   const [selectedPlayerId, setSelectedPlayerId] = useState(1);
   const [gameMode, setGameMode] = useState<'normal' | 'expert'>('normal');
   const [showRules, setShowRules] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [showQR, setShowQR] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +33,25 @@ export default function Home() {
     if (savedGameMode) {
       setGameMode(savedGameMode as 'normal' | 'expert');
     }
+    
+    // 現在のページURLのQRコードを生成
+    const generateQR = async () => {
+      const currentUrl = window.location.href;
+      try {
+        const qrUrl = await QRCode.toDataURL(currentUrl, {
+          width: 200,
+          margin: 1,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+        setQrDataUrl(qrUrl);
+      } catch (err) {
+        console.error('QRコード生成エラー:', err);
+      }
+    };
+    generateQR();
   }, []);
 
   const handleLogin = () => {
@@ -183,6 +205,22 @@ export default function Home() {
           >
             ホストとしてゲームを開始
           </button>
+          
+          {/* QRコード表示ボタンとQRコード */}
+          <div className="text-center mt-6">
+            <button
+              onClick={() => setShowQR(!showQR)}
+              className="text-sm text-blue-500 hover:text-blue-700 underline"
+            >
+              {showQR ? '📱 QRコードを隠す' : '📱 モバイルでアクセス（QRコード表示）'}
+            </button>
+            {showQR && qrDataUrl && (
+              <div className="mt-2 flex flex-col items-center">
+                <img src={qrDataUrl} alt="ページのQRコード" className="border-2 border-gray-300 rounded-lg" />
+                <p className="text-xs text-gray-500 mt-2">このQRコードを読み取ると、このページにアクセスできます</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       

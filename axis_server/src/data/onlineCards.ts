@@ -235,8 +235,8 @@ export function generateCardsForPlayer(
   playerId: number,
   count: number = 5
 ): Card[] {
-  // シード値を生成（roomId + round + playerId の組み合わせ）
-  const seedString = `${roomId}-round${round}-player${playerId}`;
+  // シード値を生成（roomId + round のみの組み合わせで全プレイヤー共通のシャッフル）
+  const seedString = `${roomId}-round${round}`;
   let seed = 0;
   for (let i = 0; i < seedString.length; i++) {
     seed = ((seed << 5) - seed) + seedString.charCodeAt(i);
@@ -249,15 +249,25 @@ export function generateCardsForPlayer(
     return seed / 2147483647;
   };
   
-  // カードプールをシャッフル（Fisher-Yates）
+  // カードプール全体をシャッフル（Fisher-Yates）
   const shuffled = [...cardPool];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   
-  // 指定枚数のカードを返す
-  return shuffled.slice(0, count);
+  // プレイヤーIDに基づいて開始位置を決定（0ベースのIDを想定）
+  const startIndex = playerId * count;
+  
+  // 開始位置から指定枚数のカードを返す
+  // カードが足りない場合は先頭に戻る（循環）
+  const result: Card[] = [];
+  for (let i = 0; i < count; i++) {
+    const index = (startIndex + i) % shuffled.length;
+    result.push(shuffled[index]);
+  }
+  
+  return result;
 }
 
 // カードのカテゴリーごとの色

@@ -93,16 +93,17 @@ export default function Game() {
       
       // オンラインモードの場合、カードを生成
       if (isOnlineMode) {
-        const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5);
-        setPlayerCards(cards);
-        
-        // ホストの場合は全プレイヤーのカードも生成
-        if (isHost) {
+        // ホストの場合
+        if (isHost || playerId === '0') {
           const allCards: Record<number, Card[]> = {};
           for (let i = 1; i <= playerCount; i++) {
             allCards[i] = generateCardsForPlayer(keyword, currentRound, i, 5);
           }
           setAllPlayersCards(allCards);
+        } else {
+          // プレイヤーの場合
+          const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5);
+          setPlayerCards(cards);
         }
       }
     }
@@ -567,19 +568,18 @@ export default function Game() {
                       </span>
                     </div>
                     <div className="grid grid-cols-5 gap-2">
-                      {cards.map((card) => (
+                      {cards.map((card, index) => (
                         <div
-                          key={card.id}
+                          key={card?.id || `card-${index}`}
                           className="bg-gray-50 rounded p-2 border text-xs"
                           style={{
                             borderColor: card?.category ? categoryColors[card.category] : '#ccc',
                           }}
                         >
                           <div className="text-xs" style={{ color: card?.category ? categoryColors[card.category] : '#666' }}>
-                            {card?.category === 'food' ? '食' :
-                             card?.category === 'item' ? '物' :
-                             card?.category === 'character' ? 'キ' :
-                             card?.category === 'place' ? '場' : '概'}
+                            {card?.category === 'food' ? '食べ物' :
+                             card?.category === 'item' ? 'アイテム' :
+                             card?.category === 'place' ? '場所' : 'コンセプト'}
                           </div>
                           <div className="font-bold text-gray-700 truncate">
                             {card?.name || 'カード'}

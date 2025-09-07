@@ -23,7 +23,10 @@ export default function Host() {
     // LocalStorageから保存されたゲームモードを読み込み
     return (localStorage.getItem('gameMode') || 'normal') as 'normal' | 'expert';
   });
-  const [isOnlineMode, setIsOnlineMode] = useState(false);
+  const [isOnlineMode, setIsOnlineMode] = useState(() => {
+    // LocalStorageから保存されたオンラインモードを読み込み
+    return localStorage.getItem('isOnlineMode') === 'true';
+  });
   const [roomCreated, setRoomCreated] = useState(false);
   const [playerQRs, setPlayerQRs] = useState<PlayerQR[]>([]);
   const [copiedId, setCopiedId] = useState<number | null>(null);

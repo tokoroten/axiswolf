@@ -7,7 +7,7 @@ import { generateSeed } from '../utils/seedGenerator';
 import type { Axis } from '../types';
 import RulesModal from '../components/RulesModal';
 import { getPlayerName } from '../data/playerNames';
-import { generateCardsForPlayer, categoryColors, type Card } from '../data/onlineCards';
+import { generateCardsForPlayer, categoryColors, categoryDisplayNames, type Card } from '../data/onlineCards';
 
 export default function Game() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -97,12 +97,12 @@ export default function Game() {
         if (isHost || playerId === '0') {
           const allCards: Record<number, Card[]> = {};
           for (let i = 1; i <= playerCount; i++) {
-            allCards[i] = generateCardsForPlayer(keyword, currentRound, i, 5);
+            allCards[i] = generateCardsForPlayer(keyword, currentRound, i, 5, gameMode);
           }
           setAllPlayersCards(allCards);
         } else {
           // プレイヤーの場合
-          const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5);
+          const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5, gameMode);
           setPlayerCards(cards);
         }
       }
@@ -562,9 +562,7 @@ export default function Game() {
                   }}
                 >
                   <div className="text-xs mb-1" style={{ color: categoryColors[card.category] }}>
-                    {card.category === 'food' ? '食べ物' :
-                     card.category === 'item' ? 'アイテム' :
-                     card.category === 'place' ? '場所' : 'コンセプト'}
+                    {categoryDisplayNames[card.category]}
                   </div>
                   <div className="text-sm font-bold text-gray-800">
                     {card.name}
@@ -609,9 +607,7 @@ export default function Game() {
                           }}
                         >
                           <div className="text-xs" style={{ color: card?.category ? categoryColors[card.category] : '#666' }}>
-                            {card?.category === 'food' ? '食べ物' :
-                             card?.category === 'item' ? 'アイテム' :
-                             card?.category === 'place' ? '場所' : 'コンセプト'}
+                            {card?.category ? categoryDisplayNames[card.category] : ''}
                           </div>
                           <div className="font-bold text-gray-700 truncate">
                             {card?.name || 'カード'}

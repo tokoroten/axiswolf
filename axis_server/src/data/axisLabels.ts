@@ -22,7 +22,7 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label10', positive: '安い', negative: '高い', difficulty: 'easy' },
   { id: 'label11', positive: '高級ブランド', negative: '庶民ブランド', difficulty: 'easy' },
   { id: 'label12', positive: '富裕層向け', negative: '一般層向け', difficulty: 'easy' },
-  { id: 'label13', positive: '株価が高い', negative: '株価が低い', difficulty: 'hard' },
+  { id: 'label13', positive: '成長産業', negative: '衰退産業', difficulty: 'hard' },
   { id: 'label14', positive: '利益率が高い', negative: '利益率が低い', difficulty: 'hard' },
   { id: 'label15', positive: '広告費が少ない', negative: '広告費が多い', difficulty: 'hard' },
   { id: 'label16', positive: 'コロナで売上増', negative: 'コロナで売上減', difficulty: 'hard' },
@@ -131,7 +131,7 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label86', positive: 'ブーバっぽい', negative: 'キキっぽい', difficulty: 'hard' },
   { id: 'label87', positive: 'まるっこい音', negative: 'とがった音', difficulty: 'easy' },
   { id: 'label88', positive: 'やわらかい名前', negative: 'かたい名前', difficulty: 'easy' },
-  { id: 'label95', positive: '濁音が多め', negative: '清音が多め', difficulty: 'hard' },
+  { id: 'label95', positive: '濁音が多め', negative: '清音が多め', difficulty: 'easy' },
   
   // 香り・匂い系
   { id: 'label89', positive: '香りが強い', negative: '無臭', difficulty: 'easy' },
@@ -158,7 +158,6 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label133', positive: 'フォーマルな場で使う', negative: 'カジュアルな場で使う', difficulty: 'easy' },
   { id: 'label134', positive: '子供が使う', negative: '大人が使う', difficulty: 'easy' },
   { id: 'label135', positive: '初心者向け', negative: 'プロ向け', difficulty: 'easy' },
-  { id: 'label136', positive: '右利き用', negative: '左利き用', difficulty: 'hard' },
   { id: 'label137', positive: '座って使う', negative: '立って使う', difficulty: 'easy' },
   { id: 'label138', positive: '手で使う', negative: '足で使う', difficulty: 'easy' },
   { id: 'label139', positive: '共有する', negative: '専有する', difficulty: 'easy' },
@@ -177,7 +176,7 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label110', positive: '公共交通', negative: '個人所有', difficulty: 'easy' },
   { id: 'label111', positive: '乗客が多い', negative: '乗客が少ない', difficulty: 'easy' },
   { id: 'label112', positive: '電動', negative: 'ガソリン', difficulty: 'easy' },
-  { id: 'label113', positive: '自動運転', negative: '手動運転', difficulty: 'hard' },
+  { id: 'label113', positive: '自動', negative: '手動', difficulty: 'hard' },
   
   // 食べ物特有系
   { id: 'label114', positive: '主食', negative: 'おかず・おやつ', difficulty: 'easy' },
@@ -185,7 +184,6 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label116', positive: '肉系', negative: '野菜系', difficulty: 'easy' },
   { id: 'label117', positive: '炭水化物多め', negative: 'タンパク質多め', difficulty: 'hard' },
   { id: 'label118', positive: '朝食向き', negative: '夕食向き', difficulty: 'easy' },
-  { id: 'label119', positive: 'アルコール入り', negative: 'ノンアルコール', difficulty: 'easy' },
   { id: 'label120', positive: '炭酸', negative: '非炭酸', difficulty: 'easy' },
   
   // 清潔・メンテナンス系
@@ -202,7 +200,6 @@ export const axisLabels: AxisLabel[] = [
   
   // ビジネス系
   { id: 'label34', positive: '世界的に有名', negative: '世界的に無名', difficulty: 'easy' },
-  { id: 'label35', positive: '成長企業', negative: '衰退企業', difficulty: 'hard' },
   { id: 'label36', positive: '政府支援あり', negative: '政府支援なし', difficulty: 'hard' },
   { id: 'label37', positive: '個人経営', negative: '大企業', difficulty: 'easy' },
   { id: 'label38', positive: '競合が多い', negative: '競合が少ない', difficulty: 'hard' },

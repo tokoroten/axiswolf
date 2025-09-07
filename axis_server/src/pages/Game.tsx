@@ -271,6 +271,23 @@ export default function Game() {
         <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
           <div className="relative" style={{ paddingTop: '100%' }}>
             <div className="absolute inset-0">
+              {/* 象限の背景色とラベル */}
+              {/* A: 右上 */}
+              <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-red-100 opacity-60"></div>
+              <div className="absolute top-8 right-8 text-6xl font-bold text-red-500 opacity-70">A</div>
+              
+              {/* B: 左上 */}
+              <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-blue-100 opacity-60"></div>
+              <div className="absolute top-8 left-8 text-6xl font-bold text-blue-500 opacity-70">B</div>
+              
+              {/* C: 左下 */}
+              <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-green-100 opacity-60"></div>
+              <div className="absolute bottom-8 left-8 text-6xl font-bold text-green-500 opacity-70">C</div>
+              
+              {/* D: 右下 */}
+              <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-yellow-100 opacity-60"></div>
+              <div className="absolute bottom-8 right-8 text-6xl font-bold text-yellow-600 opacity-70">D</div>
+              
               {/* 縦軸と横軸の線 */}
               <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-300"></div>
               <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-300"></div>

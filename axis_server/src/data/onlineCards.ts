@@ -1,5 +1,4 @@
-import 'seedrandom'; // shuffle-seedの依存関係として必要
-import shuffleSeed from 'shuffle-seed';
+import seedrandom from 'seedrandom';
 
 // オンラインプレイ用のカードデータ
 export interface Card {
@@ -241,8 +240,15 @@ export function generateCardsForPlayer(
   // シード文字列を生成（roomId + round + playerIdの組み合わせで各プレイヤー固有）
   const seedString = `${roomId}-round${round}-player${playerId}`;
   
-  // shuffle-seedを使ってカードプールをシャッフル
-  const shuffled = shuffleSeed.shuffle(cardPool, seedString);
+  // seedrandomで決定的な乱数生成器を作成
+  const rng = seedrandom(seedString);
+  
+  // カードプールをシャッフル（Fisher-Yates）
+  const shuffled = [...cardPool];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   
   // 先頭から指定枚数のカードを返す
   return shuffled.slice(0, count);

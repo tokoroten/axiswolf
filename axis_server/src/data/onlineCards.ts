@@ -274,7 +274,6 @@ export function generateCardsForPlayer(
 export const categoryColors = {
   food: '#FFA500',      // オレンジ
   item: '#4169E1',      // ロイヤルブルー
-  character: '#FF69B4', // ホットピンク
   place: '#32CD32',     // ライムグリーン
   concept: '#9370DB',   // ミディアムパープル
 };

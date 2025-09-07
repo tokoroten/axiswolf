@@ -553,21 +553,21 @@ export default function Game() {
           <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 mb-6">
             <div className="text-sm text-blue-600 mb-3 font-bold">【あなたのカード】</div>
             <div className="grid grid-cols-5 gap-3">
-              {playerCards.map((card) => (
+              {playerCards.map((card, index) => (
                 <div
-                  key={card.id}
+                  key={card?.id || `card-${index}`}
                   className="bg-white rounded-lg p-3 border-2 shadow-md hover:shadow-lg transition-shadow"
                   style={{
-                    borderColor: categoryColors[card.category],
+                    borderColor: card?.category ? categoryColors[card.category] : '#ccc',
                   }}
                 >
-                  <div className="text-xs mb-1" style={{ color: categoryColors[card.category] }}>
-                    {card.category === 'food' ? '食べ物' :
-                     card.category === 'item' ? 'アイテム' :
-                     card.category === 'place' ? '場所' : '概念'}
+                  <div className="text-xs mb-1" style={{ color: card?.category ? categoryColors[card.category] : '#666' }}>
+                    {card?.category === 'food' ? '食べ物' :
+                     card?.category === 'item' ? 'アイテム' :
+                     card?.category === 'place' ? '場所' : 'コンセプト'}
                   </div>
                   <div className="text-sm font-bold text-gray-800">
-                    {card.name}
+                    {card?.name || 'カード'}
                   </div>
                 </div>
               ))}

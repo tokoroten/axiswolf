@@ -26,6 +26,7 @@ export default function Host() {
   const [isOnlineMode, setIsOnlineMode] = useState(false);
   const [roomCreated, setRoomCreated] = useState(false);
   const [playerQRs, setPlayerQRs] = useState<PlayerQR[]>([]);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
   const navigate = useNavigate();
 
   const generateRandomKeyword = () => {
@@ -230,7 +231,30 @@ export default function Host() {
             </div>
 
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-bold mb-6 text-center">プレイヤー用QRコード</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold">プレイヤー用QRコード</h2>
+                <button
+                  onClick={async () => {
+                    const allUrls = playerQRs.map((player, index) => 
+                      `${getPlayerName(player.id).name}: ${player.url}`
+                    ).join('\n');
+                    try {
+                      await navigator.clipboard.writeText(allUrls);
+                      setCopiedId(-1);
+                      setTimeout(() => setCopiedId(null), 2000);
+                    } catch (err) {
+                      console.error('URLのコピーに失敗しました:', err);
+                    }
+                  }}
+                  className={`px-4 py-2 rounded text-sm font-medium transition-all ${
+                    copiedId === -1
+                      ? 'bg-green-500 text-white'
+                      : 'bg-purple-500 text-white hover:bg-purple-600'
+                  }`}
+                >
+                  {copiedId === -1 ? '✓ 全URLコピー済み' : '全URLを一括コピー'}
+                </button>
+              </div>
               <div className={`grid gap-6 grid-cols-1 ${
                 playerCount <= 4 ? 'md:grid-cols-4' : 
                 playerCount <= 6 ? 'md:grid-cols-3' : 
@@ -238,6 +262,16 @@ export default function Host() {
               }`}>
                 {playerQRs.map((player) => {
                   const playerInfo = getPlayerName(player.id);
+                  const handleCopyUrl = async () => {
+                    try {
+                      await navigator.clipboard.writeText(player.url);
+                      setCopiedId(player.id);
+                      setTimeout(() => setCopiedId(null), 2000);
+                    } catch (err) {
+                      console.error('URLのコピーに失敗しました:', err);
+                    }
+                  };
+                  
                   return (
                     <div key={player.id} className="text-center">
                       <div className="bg-gray-50 rounded-lg p-4">
@@ -255,11 +289,21 @@ export default function Host() {
                         >
                           {player.name}
                         </div>
+                        <button
+                          onClick={handleCopyUrl}
+                          className={`mt-2 px-3 py-1 rounded text-sm font-medium transition-all ${
+                            copiedId === player.id
+                              ? 'bg-green-500 text-white'
+                              : 'bg-blue-500 text-white hover:bg-blue-600'
+                          }`}
+                        >
+                          {copiedId === player.id ? '✓ コピー済み' : 'URLをコピー'}
+                        </button>
                         <a 
                           href={player.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-block mt-2 text-xs text-blue-600 hover:text-blue-800 underline break-all"
+                          className="block mt-1 text-xs text-gray-500 hover:text-gray-700 underline"
                         >
                           デバッグ用リンク
                         </a>

@@ -7,6 +7,7 @@ import { generateSeed } from '../utils/seedGenerator';
 import type { Axis } from '../types';
 import RulesModal from '../components/RulesModal';
 import { getPlayerName } from '../data/playerNames';
+import { generateCardsForPlayer, categoryColors, type Card } from '../data/onlineCards';
 
 export default function Game() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,6 +24,10 @@ export default function Game() {
   const playerCount = parseInt(searchParams.get('playerCount') || localStorage.getItem('playerCount') || '4');
   // ゲームモードを取得
   const gameMode = (searchParams.get('mode') || localStorage.getItem('gameMode') || 'normal') as 'normal' | 'expert';
+  // オンラインモードかどうか
+  const isOnlineMode = searchParams.get('online') === 'true' || localStorage.getItem('isOnlineMode') === 'true';
+  // オンラインモード用のカード
+  const [playerCards, setPlayerCards] = useState<Card[]>([]);
   
   // 得点管理（ホスト用）
   const [scores, setScores] = useState<Record<number, number>>(() => {
@@ -83,8 +88,14 @@ export default function Game() {
         localStorage.setItem('playerId', playerId);
       }
       loadRound();
+      
+      // オンラインモードの場合、カードを生成
+      if (isOnlineMode) {
+        const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5);
+        setPlayerCards(cards);
+      }
     }
-  }, [keyword, currentRound, playerId, loadRound]);
+  }, [keyword, currentRound, playerId, loadRound, isOnlineMode]);
 
   // ミューテーター効果を軸に適用する関数
   const applyMutator = (axis: Axis, mutator: { id: string }, seed: number, originalAxis: Axis): Axis => {
@@ -461,7 +472,7 @@ export default function Game() {
                       const playerInfo = getPlayerName(pid);
                       const baseUrl = window.location.origin;
                       const basePath = import.meta.env.BASE_URL; // '/' または '/axiswolf/'
-                      const playerUrl = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${pid}&mode=${gameMode}&round=${currentRound}&playerCount=${playerCount}`;
+                      const playerUrl = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${pid}&mode=${gameMode}&round=${currentRound}&playerCount=${playerCount}${isOnlineMode ? '&online=true' : ''}`;
                       return (
                         <a
                           key={pid}
@@ -491,6 +502,37 @@ export default function Game() {
             </div>
           );
         })()}
+
+        {/* オンラインモードの場合のカード表示 */}
+        {isOnlineMode && (
+          <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 mb-6">
+            <div className="text-sm text-blue-600 mb-3 font-bold">【あなたのカード】</div>
+            <div className="grid grid-cols-5 gap-3">
+              {playerCards.map((card) => (
+                <div
+                  key={card.id}
+                  className="bg-white rounded-lg p-3 border-2 shadow-md hover:shadow-lg transition-shadow"
+                  style={{
+                    borderColor: categoryColors[card.category],
+                  }}
+                >
+                  <div className="text-xs mb-1" style={{ color: categoryColors[card.category] }}>
+                    {card.category === 'food' ? '食べ物' :
+                     card.category === 'item' ? 'アイテム' :
+                     card.category === 'character' ? 'キャラ' :
+                     card.category === 'place' ? '場所' : '概念'}
+                  </div>
+                  <div className="text-sm font-bold text-gray-800">
+                    {card.name}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 text-xs text-blue-600">
+              ※ MiroやJamboardなどのオンラインボード上で、これらのカードを配置してください
+            </div>
+          </div>
+        )}
 
         {/* スタートプレイヤー表示（非ホスト用） */}
         {!isHost && (() => {

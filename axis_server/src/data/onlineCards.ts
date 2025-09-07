@@ -256,8 +256,8 @@ export function generateCardsForPlayer(
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   
-  // プレイヤーIDに基づいて開始位置を決定（0ベースのIDを想定）
-  const startIndex = playerId * count;
+  // プレイヤーIDに基づいて開始位置を決定（プレイヤーIDは1から始まる）
+  const startIndex = (playerId - 1) * count;
   
   // 開始位置から指定枚数のカードを返す
   // カードが足りない場合は先頭に戻る（循環）
@@ -266,6 +266,16 @@ export function generateCardsForPlayer(
     const index = (startIndex + i) % shuffled.length;
     result.push(shuffled[index]);
   }
+  
+  // デバッグ情報
+  console.log('カード生成詳細:', {
+    playerId,
+    startIndex,
+    count,
+    totalCards: shuffled.length,
+    indices: Array.from({ length: count }, (_, i) => (startIndex + i) % shuffled.length),
+    result: result.map(c => ({ id: c.id, name: c.name, category: c.category }))
+  });
   
   return result;
 }

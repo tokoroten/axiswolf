@@ -103,6 +103,12 @@ export default function Game() {
         } else {
           // プレイヤーの場合
           const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5);
+          console.log('生成されたカード:', { 
+            keyword, 
+            currentRound, 
+            playerId: parseInt(playerId), 
+            cards 
+          });
           setPlayerCards(cards);
         }
       }
@@ -553,24 +559,31 @@ export default function Game() {
           <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 mb-6">
             <div className="text-sm text-blue-600 mb-3 font-bold">【あなたのカード】</div>
             <div className="grid grid-cols-5 gap-3">
-              {playerCards.map((card, index) => (
-                <div
-                  key={card?.id || `card-${index}`}
-                  className="bg-white rounded-lg p-3 border-2 shadow-md hover:shadow-lg transition-shadow"
-                  style={{
-                    borderColor: card?.category ? categoryColors[card.category] : '#ccc',
-                  }}
-                >
-                  <div className="text-xs mb-1" style={{ color: card?.category ? categoryColors[card.category] : '#666' }}>
-                    {card?.category === 'food' ? '食べ物' :
-                     card?.category === 'item' ? 'アイテム' :
-                     card?.category === 'place' ? '場所' : 'コンセプト'}
+              {playerCards.map((card, index) => {
+                // デバッグ情報を出力
+                if (!card || !card.category || !card.name) {
+                  console.error('カードデータが不正です:', { card, index, playerCards });
+                }
+                
+                return (
+                  <div
+                    key={card?.id || `card-${index}`}
+                    className="bg-white rounded-lg p-3 border-2 shadow-md hover:shadow-lg transition-shadow"
+                    style={{
+                      borderColor: card?.category ? categoryColors[card.category] : '#ccc',
+                    }}
+                  >
+                    <div className="text-xs mb-1" style={{ color: card?.category ? categoryColors[card.category] : '#666' }}>
+                      {card?.category === 'food' ? '食べ物' :
+                       card?.category === 'item' ? 'アイテム' :
+                       card?.category === 'place' ? '場所' : 'コンセプト'}
+                    </div>
+                    <div className="text-sm font-bold text-gray-800">
+                      {card?.name || 'カード'}
+                    </div>
                   </div>
-                  <div className="text-sm font-bold text-gray-800">
-                    {card?.name || 'カード'}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-3 text-xs text-blue-600">
               ※ MiroやJamboardなどのオンラインボード上で、これらのカードを配置してください

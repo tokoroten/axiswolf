@@ -1,3 +1,4 @@
+import 'seedrandom'; // shuffle-seedの依存関係として必要
 import shuffleSeed from 'shuffle-seed';
 
 // オンラインプレイ用のカードデータ

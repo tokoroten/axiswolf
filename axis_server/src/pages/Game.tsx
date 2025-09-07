@@ -492,6 +492,31 @@ export default function Game() {
           );
         })()}
 
+        {/* スタートプレイヤー表示（非ホスト用） */}
+        {!isHost && (() => {
+          const roundSeed = generateSeed(`${keyword}-${currentRound}`);
+          const startPlayerSeed = generateSeed(`${keyword}-${currentRound}-start`);
+          const startPlayerId = (startPlayerSeed % playerCount) + 1;
+          const startPlayerInfo = getPlayerName(startPlayerId);
+          
+          return (
+            <div className="bg-purple-50 border-2 border-purple-300 rounded-xl p-4 mb-6">
+              <div className="text-sm text-purple-600 mb-1">スタートプレイヤー:</div>
+              <div className="text-lg font-bold">
+                <span 
+                  className="px-3 py-1 rounded"
+                  style={{
+                    backgroundColor: startPlayerInfo.bgColor,
+                    color: startPlayerInfo.color
+                  }}
+                >
+                  {startPlayerInfo.name}
+                </span>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* 得点管理（ホストまたはプレイヤーID1） */}
         {(isHost || (!isHost && parseInt(playerId) === 1)) && (
           <div className="bg-amber-50 border-2 border-amber-300 rounded-xl p-6 mb-6">
@@ -534,7 +559,9 @@ export default function Game() {
               })}
             </div>
             <div className="mt-3 text-xs text-amber-600">
-              <div>ルール：村人がウルフを当てたら+1点、ウルフが逃げ切ったら+3点</div>
+              <div>【得点ルール】</div>
+              <div>村人：人狼を正しく指したら+1点（最多票になったら全員+1点）</div>
+              <div>人狼：最多票を避けられたら+3点</div>
               <div className="text-red-600">ペナルティ：軸の名前を口に出したら-1点</div>
             </div>
           </div>

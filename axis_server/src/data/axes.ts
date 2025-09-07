@@ -19,15 +19,21 @@ export function generateAxis(seed: number, index: number, mode: 'normal' | 'expe
   const label1 = availableLabels[label1Index];
   const label2 = availableLabels[label2Index];
   
+  // 各軸のポジティブ/ネガティブをランダムに反転するかどうか決定
+  // 水平軸の反転（シードベースで決定）
+  const flipHorizontal = ((seed + index * 17) % 2) === 0;
+  // 垂直軸の反転（シードベースで決定）
+  const flipVertical = ((seed + index * 23) % 2) === 0;
+  
   return {
     id: `axis${index}`,
     horizontal: {
-      left: label1.positive,
-      right: label1.negative
+      left: flipHorizontal ? label1.negative : label1.positive,
+      right: flipHorizontal ? label1.positive : label1.negative
     },
     vertical: {
-      top: label2.positive,
-      bottom: label2.negative
+      top: flipVertical ? label2.negative : label2.positive,
+      bottom: flipVertical ? label2.positive : label2.negative
     }
   };
 }

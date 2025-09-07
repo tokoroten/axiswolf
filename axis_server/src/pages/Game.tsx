@@ -114,17 +114,46 @@ export default function Game() {
     // 難易度に応じたラベルを取得
     const availableLabels = getAxisLabelsByDifficulty(gameMode);
     
-    // 現在使われているラベルのインデックスを取得
-    const getCurrentLabelIndices = () => {
-      const horizontalIndex = availableLabels.findIndex(label => 
+    // 現在使われているラベルのインデックスと反転状態を取得
+    const getCurrentLabelInfo = () => {
+      // 水平軸の検索（正順と反転の両方を試す）
+      let horizontalIndex = availableLabels.findIndex(label => 
         label.positive === originalAxis.horizontal.left && 
         label.negative === originalAxis.horizontal.right
       );
-      const verticalIndex = availableLabels.findIndex(label => 
+      let horizontalFlipped = false;
+      
+      if (horizontalIndex === -1) {
+        // 反転している場合
+        horizontalIndex = availableLabels.findIndex(label => 
+          label.negative === originalAxis.horizontal.left && 
+          label.positive === originalAxis.horizontal.right
+        );
+        horizontalFlipped = true;
+      }
+      
+      // 垂直軸の検索（正順と反転の両方を試す）
+      let verticalIndex = availableLabels.findIndex(label => 
         label.positive === originalAxis.vertical.top && 
         label.negative === originalAxis.vertical.bottom
       );
-      return { horizontalIndex, verticalIndex };
+      let verticalFlipped = false;
+      
+      if (verticalIndex === -1) {
+        // 反転している場合
+        verticalIndex = availableLabels.findIndex(label => 
+          label.negative === originalAxis.vertical.top && 
+          label.positive === originalAxis.vertical.bottom
+        );
+        verticalFlipped = true;
+      }
+      
+      return { 
+        horizontalIndex, 
+        verticalIndex, 
+        horizontalFlipped, 
+        verticalFlipped 
+      };
     };
     
     // 異なるラベルを選択
@@ -137,34 +166,36 @@ export default function Game() {
       return newIndex;
     };
 
-    const currentIndices = getCurrentLabelIndices();
+    const currentInfo = getCurrentLabelInfo();
 
     switch (mutator.id) {
       case 'mutator1': { // 縦軸を別の軸に変更
-        const newVerticalIndex = getAlternativeLabelIndex(currentIndices.verticalIndex, 1);
+        const newVerticalIndex = getAlternativeLabelIndex(currentInfo.verticalIndex, 1);
         const newLabel = availableLabels[newVerticalIndex];
         return {
           ...axis,
           vertical: {
-            top: newLabel.positive,
-            bottom: newLabel.negative
+            // 元の反転状態を維持
+            top: currentInfo.verticalFlipped ? newLabel.negative : newLabel.positive,
+            bottom: currentInfo.verticalFlipped ? newLabel.positive : newLabel.negative
           }
         };
       }
       case 'mutator2': { // 横軸を別の軸に変更
-        const newHorizontalIndex = getAlternativeLabelIndex(currentIndices.horizontalIndex, 2);
+        const newHorizontalIndex = getAlternativeLabelIndex(currentInfo.horizontalIndex, 2);
         const newLabel = availableLabels[newHorizontalIndex];
         return {
           ...axis,
           horizontal: {
-            left: newLabel.positive,
-            right: newLabel.negative
+            // 元の反転状態を維持
+            left: currentInfo.horizontalFlipped ? newLabel.negative : newLabel.positive,
+            right: currentInfo.horizontalFlipped ? newLabel.positive : newLabel.negative
           }
         };
       }
       case 'mutator3': { // 両軸を別の軸に変更
-        const newHorizontalIndex = getAlternativeLabelIndex(currentIndices.horizontalIndex, 3);
-        const newVerticalIndex = getAlternativeLabelIndex(currentIndices.verticalIndex, 5);
+        const newHorizontalIndex = getAlternativeLabelIndex(currentInfo.horizontalIndex, 3);
+        const newVerticalIndex = getAlternativeLabelIndex(currentInfo.verticalIndex, 5);
         // 両軸が同じにならないようにする
         let finalVerticalIndex = newVerticalIndex;
         while (finalVerticalIndex === newHorizontalIndex) {
@@ -175,12 +206,14 @@ export default function Game() {
         return {
           ...axis,
           horizontal: {
-            left: horizontalLabel.positive,
-            right: horizontalLabel.negative
+            // 元の反転状態を維持
+            left: currentInfo.horizontalFlipped ? horizontalLabel.negative : horizontalLabel.positive,
+            right: currentInfo.horizontalFlipped ? horizontalLabel.positive : horizontalLabel.negative
           },
           vertical: {
-            top: verticalLabel.positive,
-            bottom: verticalLabel.negative
+            // 元の反転状態を維持
+            top: currentInfo.verticalFlipped ? verticalLabel.negative : verticalLabel.positive,
+            bottom: currentInfo.verticalFlipped ? verticalLabel.positive : verticalLabel.negative
           }
         };
       }

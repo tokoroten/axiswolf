@@ -409,7 +409,7 @@ export default function Game() {
                         >
                           {playerInfo.name}
                           {pid === zureshaPlayerId && (
-                            <span className="ml-1">(ズレ者)</span>
+                            <span className="ml-1">(人狼)</span>
                           )}
                         </a>
                       );

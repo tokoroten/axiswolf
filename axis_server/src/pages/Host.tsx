@@ -46,13 +46,15 @@ export default function Host() {
   };
 
   const generatePlayerQRs = async () => {
+    // Viteのbase設定を使用してURLを生成（ローカル・GitHub両対応）
     const baseUrl = window.location.origin;
+    const basePath = import.meta.env.BASE_URL; // '/' または '/axiswolf/'
     const players: PlayerQR[] = [];
     
     // 指定人数分のQRコードを生成
     for (let i = 1; i <= playerCount; i++) {
       const playerInfo = getPlayerName(i);
-      const url = `${baseUrl}/game?keyword=${encodeURIComponent(keyword)}&pid=${i}&mode=${gameMode}`;
+      const url = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${i}&mode=${gameMode}`;
       
       try {
         const qrDataUrl = await QRCode.toDataURL(url, {

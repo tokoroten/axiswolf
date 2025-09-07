@@ -28,6 +28,8 @@ export default function Game() {
   const isOnlineMode = searchParams.get('online') === 'true' || localStorage.getItem('isOnlineMode') === 'true';
   // オンラインモード用のカード
   const [playerCards, setPlayerCards] = useState<Card[]>([]);
+  // 全プレイヤーのカード（ホスト用）
+  const [allPlayersCards, setAllPlayersCards] = useState<Record<number, Card[]>>({});
   
   // 得点管理（ホスト用）
   const [scores, setScores] = useState<Record<number, number>>(() => {
@@ -93,6 +95,15 @@ export default function Game() {
       if (isOnlineMode) {
         const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5);
         setPlayerCards(cards);
+        
+        // ホストの場合は全プレイヤーのカードも生成
+        if (isHost) {
+          const allCards: Record<number, Card[]> = {};
+          for (let i = 1; i <= playerCount; i++) {
+            allCards[i] = generateCardsForPlayer(keyword, currentRound, i, 5);
+          }
+          setAllPlayersCards(allCards);
+        }
       }
     }
   }, [keyword, currentRound, playerId, loadRound, isOnlineMode]);
@@ -504,7 +515,7 @@ export default function Game() {
         })()}
 
         {/* オンラインモードの場合のカード表示 */}
-        {isOnlineMode && (
+        {isOnlineMode && !isHost && (
           <div className="bg-blue-50 border-2 border-blue-300 rounded-xl p-6 mb-6">
             <div className="text-sm text-blue-600 mb-3 font-bold">【あなたのカード】</div>
             <div className="grid grid-cols-5 gap-3">
@@ -530,6 +541,58 @@ export default function Game() {
             </div>
             <div className="mt-3 text-xs text-blue-600">
               ※ MiroやJamboardなどのオンラインボード上で、これらのカードを配置してください
+            </div>
+          </div>
+        )}
+
+        {/* ホスト用：全プレイヤーのカード表示 */}
+        {isOnlineMode && isHost && (
+          <div className="bg-indigo-50 border-2 border-indigo-300 rounded-xl p-6 mb-6">
+            <div className="text-sm text-indigo-600 mb-3 font-bold">【全プレイヤーのカード（ホスト用）】</div>
+            <div className="space-y-4">
+              {Array.from({ length: playerCount }, (_, i) => i + 1).map(pid => {
+                const playerInfo = getPlayerName(pid);
+                const cards = allPlayersCards[pid] || [];
+                return (
+                  <div key={pid} className="bg-white rounded-lg p-4 border border-indigo-200">
+                    <div className="mb-2">
+                      <span 
+                        className="px-3 py-1 rounded text-sm font-bold"
+                        style={{
+                          backgroundColor: playerInfo.bgColor,
+                          color: playerInfo.color
+                        }}
+                      >
+                        {playerInfo.name}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                      {cards.map((card) => (
+                        <div
+                          key={card.id}
+                          className="bg-gray-50 rounded p-2 border text-xs"
+                          style={{
+                            borderColor: categoryColors[card.category],
+                          }}
+                        >
+                          <div className="text-xs" style={{ color: categoryColors[card.category] }}>
+                            {card.category === 'food' ? '食' :
+                             card.category === 'item' ? '物' :
+                             card.category === 'character' ? 'キ' :
+                             card.category === 'place' ? '場' : '概'}
+                          </div>
+                          <div className="font-bold text-gray-700 truncate">
+                            {card.name}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 text-xs text-indigo-600">
+              ※ この情報はホストのみに表示されています
             </div>
           </div>
         )}

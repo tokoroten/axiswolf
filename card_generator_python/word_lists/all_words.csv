@@ -1,0 +1,233 @@
+ID,ジャンル,日本語,英語名
+1,食べ物,寿司,sushi
+2,食べ物,ラーメン,ramen noodles
+3,食べ物,カレー,curry
+4,食べ物,ピザ,pizza
+5,食べ物,ハンバーガー,hamburger
+6,食べ物,天ぷら,tempura
+7,食べ物,うどん,udon noodles
+8,食べ物,そば,soba noodles
+9,食べ物,おにぎり,rice ball
+10,食べ物,たこ焼き,takoyaki octopus balls
+11,食べ物,焼き鳥,grilled chicken skewers
+12,食べ物,餃子,dumplings
+13,食べ物,チャーハン,fried rice
+14,食べ物,パスタ,pasta
+15,食べ物,サラダ,salad
+16,食べ物,ステーキ,steak
+17,食べ物,焼肉,grilled meat
+18,食べ物,しゃぶしゃぶ,hot pot
+19,食べ物,お好み焼き,savory pancake
+20,食べ物,牛丼,beef bowl
+21,食べ物,親子丼,chicken and egg bowl
+22,食べ物,カツ丼,pork cutlet bowl
+23,食べ物,オムライス,omelet rice
+24,食べ物,カレーパン,curry bread
+25,食べ物,メロンパン,melon bread
+26,食べ物,クロワッサン,croissant
+27,食べ物,ドーナツ,donut
+28,食べ物,ケーキ,cake
+29,食べ物,プリン,pudding
+30,食べ物,アイスクリーム,ice cream
+31,食べ物,チョコレート,chocolate
+32,食べ物,ポテトチップス,potato chips
+33,食べ物,せんべい,rice crackers
+34,食べ物,団子,dumplings
+35,食べ物,大福,mochi rice cake
+36,食べ物,たい焼き,fish-shaped pastry
+37,食べ物,わたあめ,cotton candy
+38,食べ物,かき氷,shaved ice
+39,食べ物,コーヒー,coffee
+40,食べ物,紅茶,tea
+41,食べ物,緑茶,green tea
+42,乗り物,軽自動車,compact car
+43,乗り物,普通自動車,sedan
+44,乗り物,高級車,luxury car
+45,乗り物,スポーツカー,sports car
+46,乗り物,ワゴン車,station wagon
+47,乗り物,ミニバン,minivan
+48,乗り物,SUV,SUV
+49,乗り物,トラック,truck
+50,乗り物,バス,bus
+51,乗り物,タクシー,taxi
+52,乗り物,パトカー,police car
+53,乗り物,救急車,ambulance
+54,乗り物,消防車,fire truck
+55,乗り物,ショベルカー,excavator
+56,乗り物,ブルドーザー,bulldozer
+57,乗り物,クレーン車,crane truck
+58,乗り物,ダンプカー,dump truck
+59,乗り物,フォークリフト,forklift
+60,乗り物,トラクター,tractor
+61,乗り物,コンバイン,combine harvester
+62,乗り物,耕運機,cultivator
+63,乗り物,ロードローラー,road roller
+64,乗り物,ミキサー車,concrete mixer truck
+65,乗り物,ゴミ収集車,garbage truck
+66,乗り物,タンクローリー,tank truck
+67,乗り物,新幹線,bullet train
+68,乗り物,特急電車,express train
+69,乗り物,普通電車,local train
+70,乗り物,地下鉄,subway
+71,乗り物,路面電車,streetcar
+72,乗り物,モノレール,monorail
+73,乗り物,蒸気機関車,steam locomotive
+74,乗り物,貨物列車,freight train
+75,乗り物,旅客機,passenger aircraft
+76,乗り物,戦闘機,fighter jet
+77,乗り物,ヘリコプター,helicopter
+78,乗り物,プロペラ機,propeller plane
+79,乗り物,グライダー,glider
+80,乗り物,気球,hot air balloon
+81,乗り物,ロケット,rocket
+82,乗り物,宇宙船,spacecraft
+83,乗り物,客船,cruise ship
+84,乗り物,タンカー,oil tanker
+85,乗り物,漁船,fishing boat
+86,乗り物,ヨット,yacht
+87,乗り物,カヌー,canoe
+88,乗り物,水上バイク,jet ski
+89,乗り物,潜水艦,submarine
+90,乗り物,フェリー,ferry
+91,乗り物,原付バイク,scooter
+92,乗り物,オートバイ,motorcycle
+93,乗り物,電動自転車,electric bicycle
+94,乗り物,三輪車,tricycle
+95,乗り物,一輪車,unicycle
+96,乗り物,スケートボード,skateboard
+97,乗り物,キックボード,kick scooter
+98,乗り物,セグウェイ,segway
+99,乗り物,車椅子,wheelchair
+100,乗り物,ベビーカー,baby stroller
+101,乗り物,リヤカー,cart
+102,乗り物,馬車,horse carriage
+103,日用品,スマートフォン,smartphone
+104,日用品,パソコン,computer
+105,日用品,テレビ,television
+106,日用品,冷蔵庫,refrigerator
+107,日用品,洗濯機,washing machine
+108,日用品,エアコン,air conditioner
+109,日用品,掃除機,vacuum cleaner
+110,日用品,電子レンジ,microwave
+111,日用品,炊飯器,rice cooker
+112,日用品,ドライヤー,hair dryer
+113,日用品,歯ブラシ,toothbrush
+114,日用品,シャンプー,shampoo
+115,日用品,タオル,towel
+116,日用品,ティッシュ,tissue
+117,日用品,トイレットペーパー,toilet paper
+118,日用品,マスク,face mask
+119,日用品,メガネ,glasses
+120,日用品,腕時計,wristwatch
+121,日用品,財布,wallet
+122,日用品,カバン,bag
+123,日用品,傘,umbrella
+124,日用品,靴,shoes
+125,日用品,服,clothing
+126,日用品,帽子,hat
+127,日用品,手袋,gloves
+128,日用品,マフラー,scarf
+129,日用品,ペン,pen
+130,日用品,ノート,notebook
+131,日用品,はさみ,scissors
+132,日用品,のり,glue
+133,日用品,定規,ruler
+134,日用品,消しゴム,eraser
+135,日用品,鉛筆,pencil
+136,日用品,本,book
+137,日用品,雑誌,magazine
+138,日用品,新聞,newspaper
+139,日用品,カメラ,camera
+140,日用品,自転車,bicycle
+141,日用品,車,car
+142,日用品,電車,train
+143,日用品,飛行機,airplane
+144,軸評価用,ダイヤモンド,diamond
+145,軸評価用,羽毛,feather
+146,軸評価用,氷,ice
+147,軸評価用,炎,fire
+148,軸評価用,鉄,iron
+149,軸評価用,綿,cotton
+150,軸評価用,岩,rock
+151,軸評価用,水,water
+152,軸評価用,ガラス,glass
+153,軸評価用,ゴム,rubber
+154,軸評価用,木材,wood
+155,軸評価用,プラスチック,plastic
+156,軸評価用,スポンジ,sponge
+157,軸評価用,針,needle
+158,軸評価用,刀,sword
+159,軸評価用,盾,shield
+160,軸評価用,槍,spear
+161,軸評価用,弓,bow
+162,軸評価用,ハンマー,hammer
+163,軸評価用,釘,nail
+164,軸評価用,ライオン,lion
+165,軸評価用,うさぎ,rabbit
+166,軸評価用,象,elephant
+167,軸評価用,蟻,ant
+168,軸評価用,鷹,eagle
+169,軸評価用,亀,turtle
+170,軸評価用,チーター,cheetah
+171,軸評価用,ナマケモノ,sloth
+172,軸評価用,サボテン,cactus
+173,軸評価用,桜,cherry blossom
+174,軸評価用,竹,bamboo
+175,軸評価用,きのこ,mushroom
+176,軸評価用,バラ,rose
+177,軸評価用,雑草,weed
+178,軸評価用,稲妻,lightning
+179,軸評価用,雲,cloud
+180,軸評価用,太陽,sun
+181,軸評価用,月,moon
+182,軸評価用,星,star
+183,軸評価用,雪,snow
+184,軸評価用,風,wind
+185,軸評価用,虹,rainbow
+186,軸評価用,筋肉,muscle
+187,軸評価用,骨,bone
+188,軸評価用,心臓,heart
+189,軸評価用,脳,brain
+190,軸評価用,目,eye
+191,軸評価用,耳,ear
+192,軸評価用,手,hand
+193,軸評価用,足,foot
+194,軸評価用,城,castle
+195,軸評価用,小屋,cabin
+196,軸評価用,高層ビル,skyscraper
+197,軸評価用,テント,tent
+198,軸評価用,橋,bridge
+199,軸評価用,トンネル,tunnel
+200,軸評価用,山,mountain
+201,軸評価用,谷,valley
+202,軸評価用,海,ocean
+203,軸評価用,川,river
+204,軸評価用,湖,lake
+205,軸評価用,砂漠,desert
+206,軸評価用,森,forest
+207,軸評価用,草原,grassland
+208,軸評価用,洞窟,cave
+209,軸評価用,火山,volcano
+210,軸評価用,氷山,iceberg
+211,軸評価用,地球,earth
+212,軸評価用,宇宙,space
+213,軸評価用,砂時計,hourglass
+214,軸評価用,コンパス,compass
+215,軸評価用,地図,map
+216,軸評価用,羅針盤,magnetic compass
+217,軸評価用,望遠鏡,telescope
+218,軸評価用,顕微鏡,microscope
+219,軸評価用,時計,clock
+220,軸評価用,カレンダー,calendar
+221,軸評価用,電話,telephone
+222,軸評価用,ラジオ,radio
+223,軸評価用,スピーカー,speaker
+224,プレイヤー用,ルビー,ruby
+225,プレイヤー用,サファイア,sapphire
+226,プレイヤー用,エメラルド,emerald
+227,プレイヤー用,ダイヤ,diamond
+228,プレイヤー用,トパーズ,topaz
+229,プレイヤー用,アメジスト,amethyst
+230,プレイヤー用,オニキス,onyx
+231,プレイヤー用,アクアマリン,aquamarine
+

@@ -52,7 +52,7 @@ export default function Home() {
           アクシスウルフ
         </h1>
         <p className="text-center text-gray-600 mb-6">
-          軸がズレたウルフを見つけ出せ！
+          軸がズレた人狼を見つけ出せ！
         </p>
         
         <div className="text-center mb-6">

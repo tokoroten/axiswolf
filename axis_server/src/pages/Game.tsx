@@ -346,7 +346,7 @@ export default function Game() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-purple-600 mb-1">今回のウルフ:</div>
+                    <div className="text-sm text-purple-600 mb-1">今回の人狼:</div>
                     <div className="text-lg font-bold text-purple-700">
                       <span 
                         className="px-3 py-1 rounded"
@@ -362,7 +362,7 @@ export default function Game() {
                 </div>
                 
                 <div>
-                  <div className="text-sm text-purple-600 mb-1">ウルフに表示されている軸:</div>
+                  <div className="text-sm text-purple-600 mb-1">人狼に表示されている軸:</div>
                   <div className="bg-white rounded-lg p-3 text-sm">
                     <div className="grid grid-cols-2 gap-2">
                       <div>

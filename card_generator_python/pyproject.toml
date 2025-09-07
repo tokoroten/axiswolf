@@ -1,0 +1,36 @@
+[project]
+name = "axiswolf-card-generator"
+version = "0.1.0"
+description = "Card generator for AxisWolf board game"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pillow>=10.0.0",
+    "reportlab>=4.0.0",
+    "requests>=2.31.0",
+    "numpy>=1.24.0",
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.black]
+line-length = 100
+target-version = ['py39']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

@@ -10,7 +10,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b border-gray-200 p-6">
-          <h2 className="text-2xl font-bold text-gray-800">アクシスウルフ：軸がズレたウルフを見つけ出せ！</h2>
+          <h2 className="text-2xl font-bold text-gray-800">アクシスウルフ：軸がズレた人狼を見つけ出せ！</h2>
           <button
             onClick={onClose}
             className="absolute top-6 right-6 text-gray-500 hover:text-gray-700 text-2xl font-bold"
@@ -23,8 +23,11 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
           <section>
             <h3 className="text-lg font-bold text-purple-600 mb-3">🎯 ゲームの目的</h3>
             <p className="text-gray-700">
-              プレイヤーの中に一人だけ存在する「ウルフ」を見つけ出す正体隠匿ゲームです。
-              ウルフは微妙に異なる軸を見ていますが、自分がウルフであることは知りません。
+              プレイヤーの中に一人だけ存在する「人狼」を見け出す正体隠匿ゲームです。
+              プレイヤーは、スマホに表示されている軸に沿って手持ちのカードを配置していきます。
+              人狼はほかの人とは異なる軸を見ていますが、自分が人狼であることは知りません。
+              ゲームが進む中で、誰が人狼なのかを推理し、最終的に投票で当てることが目的です。
+              人狼は自分が人狼だと投票されないことが目的です。
             </p>
           </section>
 
@@ -48,16 +51,16 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
                 <li><strong>縦軸（上下）：</strong>対立する概念（例：「子どもウケ」↔「大人ウケ」）</li>
                 <li><strong>横軸（左右）：</strong>対立する概念（例：「安い」↔「高い」）</li>
-                <li>物理カードをこの4象限のどこに配置するか議論します</li>
+                <li>手番の人はカードをこの4象限の適切な場所に配置していきます</li>
               </ul>
             </div>
           </section>
 
           <section>
-            <h3 className="text-lg font-bold text-purple-600 mb-3">🕵️ ウルフの仕組み</h3>
+            <h3 className="text-lg font-bold text-purple-600 mb-3">🕵️ 人狼の仕組み</h3>
             <div className="bg-yellow-50 p-3 rounded-lg">
               <p className="text-gray-700 mb-2">
-                <strong>ウルフだけが見ている軸の違い：</strong>
+                <strong>人狼だけが見ている軸の違い：</strong>
               </p>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
                 <li>縦軸か横軸の片方、または両方が別の概念に変更</li>
@@ -65,21 +68,22 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
                 <li>縦軸と横軸が入れ替わっている</li>
               </ul>
               <p className="text-gray-700 mt-2">
-                ※ ウルフ自身も自分がウルフだとは知りません
+                ※ 人狼自身も自分が人狼だとは知りません
+                うまく立ち回って他のプレイヤーに気づかれないようにしましょう
               </p>
             </div>
           </section>
 
           <section>
-            <h3 className="text-lg font-bold text-purple-600 mb-3">🎯 ゲームのプレイ（3ラウンド）</h3>
+            <h3 className="text-lg font-bold text-purple-600 mb-3">🎯 ゲームのプレイ</h3>
             <ol className="list-decimal list-inside space-y-2 text-gray-700">
-              <li><strong>軸の確認：</strong>全員が自分の画面で軸を確認（ウルフだけ違う）</li>
+              <li><strong>軸の確認：</strong>全員が自分の画面で軸を確認（人狼だけ違う）</li>
               <li><strong>スタートプレイヤー：</strong>システムが指定したプレイヤーから開始</li>
               <li><strong>手番：</strong>手札から1枚選び、軸に沿って置く</li>
-              <li><strong>配置：</strong>全員で合意したら物理的にカードを配置</li>
+              <li><strong>配置：</strong>他のカードの位置を調整しても構わない</li>
               <li><strong>補充：</strong>山札から1枚引いて手札を5枚に保つ</li>
               <li><strong>次の人へ：</strong>時計回りに進行</li>
-              <li><strong>ラウンド終了：</strong>一定枚数配置したら投票へ</li>
+              <li><strong>ラウンド終了：</strong>各プレイヤーが3枚数配置したら投票へ</li>
             </ol>
           </section>
 
@@ -88,16 +92,17 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
             <div className="bg-yellow-50 p-3 rounded-lg mb-3">
               <h4 className="font-bold text-yellow-800 mb-2">投票（各ラウンド終了時）</h4>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li>誰がウルフだと思うか一斉に指さす</li>
-                <li>最多票を集めた人がウルフ候補</li>
-                <li>同票の場合はウルフの勝利</li>
+                <li>誰が人狼だと思うか一斉に指さす</li>
+                <li>最多票を集めた人が人狼候補</li>
+                <li>同票の場合は人狼の勝利</li>
               </ul>
             </div>
             <div className="bg-green-50 p-3 rounded-lg mb-3">
               <h4 className="font-bold text-green-800 mb-2">得点</h4>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li><strong>村人チーム：</strong>ウルフを正しく当てたら<span className="font-bold text-green-600">+1点</span></li>
-                <li><strong>ウルフ：</strong>最多票を避けられたら<span className="font-bold text-purple-600">+3点</span></li>
+                <li><strong>村人チーム：</strong>人狼が最多票になったら<span className="font-bold text-green-600">全員に+1点</span></li>
+                <li><strong>村人チーム：</strong>人狼を正しく指したら<span className="font-bold text-green-600">指した人に+1点</span></li>
+                <li><strong>人狼：</strong>最多票を避けられたら<span className="font-bold text-purple-600">+3点</span></li>
               </ul>
             </div>
             <div className="bg-red-50 p-3 rounded-lg mb-3">
@@ -110,9 +115,8 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
             <div className="bg-blue-50 p-3 rounded-lg">
               <h4 className="font-bold text-blue-800 mb-2">勝利条件</h4>
               <ul className="list-disc list-inside space-y-1 text-gray-700 ml-4">
-                <li><strong>3ラウンド終了後</strong>に最終得点を計算</li>
+                <li><strong>複数ラウンド終了後</strong>に最終得点を計算</li>
                 <li>最も得点が高いプレイヤーが勝利</li>
-                <li>同点の場合はウルフだった回数が少ない方が勝利</li>
               </ul>
             </div>
           </section>
@@ -152,7 +156,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
               <li>カードをどこに置くか、その理由を説明しながら議論する</li>
               <li>一人だけ配置の理由が不自然な人を探す</li>
               <li>複数のカードで一貫してズレている人を見つける</li>
-              <li>ウルフも自然に振る舞おうとするので注意深く観察</li>
+              <li>人狼も自然に振る舞おうとするので注意深く観察</li>
               <li>手札の選択も重要な戦略要素</li>
             </ul>
           </section>

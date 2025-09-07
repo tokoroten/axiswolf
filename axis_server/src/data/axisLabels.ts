@@ -45,7 +45,8 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label27', positive: '国際展開', negative: '国内限定', difficulty: 'hard' },
   { id: 'label28', positive: '輸出が多い', negative: '輸入が多い', difficulty: 'hard' },
   { id: 'label29', positive: 'サブカル', negative: 'メインカルチャー', difficulty: 'hard' },
-  
+  { id: 'label900', positive: '世界市場において日本企業のマーケットシェアが大きい', negative: '世界市場において日本企業のマーケットシェアが小さい', difficulty: 'hard' },
+
   // 時間・歴史系
   { id: 'label30', positive: '古い', negative: '新しい', difficulty: 'easy' },
   { id: 'label31', positive: '歴史が長い', negative: '歴史が短い', difficulty: 'easy' },

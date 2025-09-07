@@ -394,7 +394,9 @@ export default function Game() {
                   <div className="grid grid-cols-2 gap-2">
                     {Array.from({ length: playerCount }, (_, i) => i + 1).map(pid => {
                       const playerInfo = getPlayerName(pid);
-                      const playerUrl = `/game?keyword=${encodeURIComponent(keyword)}&pid=${pid}&mode=${gameMode}&round=${currentRound}&playerCount=${playerCount}`;
+                      const baseUrl = window.location.origin;
+                      const basePath = import.meta.env.BASE_URL; // '/' または '/axiswolf/'
+                      const playerUrl = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${pid}&mode=${gameMode}&round=${currentRound}&playerCount=${playerCount}`;
                       return (
                         <a
                           key={pid}

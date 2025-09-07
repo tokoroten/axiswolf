@@ -1,3 +1,5 @@
+import seedrandom from 'seedrandom';
+
 // オンラインプレイ用のカードデータ
 export interface Card {
   id: string;
@@ -235,24 +237,16 @@ export function generateCardsForPlayer(
   playerId: number,
   count: number = 5
 ): Card[] {
-  // シード値を生成（roomId + round + playerIdの組み合わせで各プレイヤー固有）
+  // シード文字列を生成（roomId + round + playerIdの組み合わせで各プレイヤー固有）
   const seedString = `${roomId}-round${round}-player${playerId}`;
-  let seed = 0;
-  for (let i = 0; i < seedString.length; i++) {
-    seed = ((seed << 5) - seed) + seedString.charCodeAt(i);
-    seed = seed & seed; // Convert to 32bit integer
-  }
   
-  // 線形合同法による疑似乱数生成
-  const random = () => {
-    seed = (seed * 1664525 + 1013904223) % 2147483647;
-    return seed / 2147483647;
-  };
+  // seedrandomで決定的な乱数生成器を作成
+  const rng = seedrandom(seedString);
   
   // カードプールをシャッフル（Fisher-Yates）
   const shuffled = [...cardPool];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   

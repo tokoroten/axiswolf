@@ -275,27 +275,101 @@ export default function Game() {
               <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-300"></div>
               <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-300"></div>
               
-              {/* 軸ラベル */}
-              <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-                <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg">
-                  {currentAxis.vertical.top}
-                </div>
-              </div>
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg">
-                  {currentAxis.vertical.bottom}
-                </div>
-              </div>
-              <div className="absolute left-2 top-1/2 transform -translate-y-1/2">
-                <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg">
-                  {currentAxis.horizontal.left}
-                </div>
-              </div>
-              <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg">
-                  {currentAxis.horizontal.right}
-                </div>
-              </div>
+              {/* ホストモードの場合、正解と人狼の両方を表示 */}
+              {isHost ? (() => {
+                // ラウンドシード生成
+                const roundSeed = generateSeed(`${keyword}-${currentRound}`);
+                const originalAxis = generateAxis(roundSeed, currentRound, gameMode);
+                
+                // ウルフを決定
+                const zureshaPlayerId = (roundSeed % playerCount) + 1;
+                
+                // ズレシードからミューテーター情報を取得
+                const zureSeed = generateSeed(`${keyword}-${currentRound}-zure`);
+                const mutatorIndex = zureSeed % mutators.length;
+                const selectedMutator = mutators[mutatorIndex];
+                const mutatedAxis = applyMutator(originalAxis, selectedMutator, zureSeed, originalAxis);
+                
+                return (
+                  <>
+                    {/* 正解の軸（実線） */}
+                    <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+                      <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg border-2 border-blue-500">
+                        {originalAxis.vertical.top}
+                      </div>
+                    </div>
+                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+                      <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg border-2 border-blue-500">
+                        {originalAxis.vertical.bottom}
+                      </div>
+                    </div>
+                    <div className="absolute left-2 top-1/2 transform -translate-y-1/2">
+                      <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg border-2 border-green-500">
+                        {originalAxis.horizontal.left}
+                      </div>
+                    </div>
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                      <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg border-2 border-green-500">
+                        {originalAxis.horizontal.right}
+                      </div>
+                    </div>
+                    
+                    {/* 人狼の軸（点線・赤） - 変更がある場合のみ表示 */}
+                    {mutatedAxis.vertical.top !== originalAxis.vertical.top && (
+                      <div className="absolute top-12 left-1/2 transform -translate-x-1/2">
+                        <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
+                          <span className="text-red-600">人狼: {mutatedAxis.vertical.top}</span>
+                        </div>
+                      </div>
+                    )}
+                    {mutatedAxis.vertical.bottom !== originalAxis.vertical.bottom && (
+                      <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2">
+                        <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
+                          <span className="text-red-600">人狼: {mutatedAxis.vertical.bottom}</span>
+                        </div>
+                      </div>
+                    )}
+                    {mutatedAxis.horizontal.left !== originalAxis.horizontal.left && (
+                      <div className="absolute left-2 top-1/3 transform -translate-y-1/2">
+                        <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
+                          <span className="text-red-600">人狼: {mutatedAxis.horizontal.left}</span>
+                        </div>
+                      </div>
+                    )}
+                    {mutatedAxis.horizontal.right !== originalAxis.horizontal.right && (
+                      <div className="absolute right-2 top-1/3 transform -translate-y-1/2">
+                        <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
+                          <span className="text-red-600">人狼: {mutatedAxis.horizontal.right}</span>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })() : (
+                <>
+                  {/* 通常プレイヤーの軸表示 */}
+                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg">
+                      {currentAxis.vertical.top}
+                    </div>
+                  </div>
+                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg">
+                      {currentAxis.vertical.bottom}
+                    </div>
+                  </div>
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2">
+                    <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg">
+                      {currentAxis.horizontal.left}
+                    </div>
+                  </div>
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                    <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg">
+                      {currentAxis.horizontal.right}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -361,32 +435,6 @@ export default function Game() {
                   </div>
                 </div>
                 
-                <div>
-                  <div className="text-sm text-purple-600 mb-1">人狼に表示されている軸:</div>
-                  <div className="bg-white rounded-lg p-3 text-sm">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <span className="text-gray-500">縦軸:</span>
-                        <div className="font-medium">
-                          <span className="text-blue-600">{mutatedAxis.vertical.top}</span>
-                          <span className="mx-1">/</span>
-                          <span className="text-blue-600">{mutatedAxis.vertical.bottom}</span>
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-gray-500">横軸:</span>
-                        <div className="font-medium">
-                          <span className="text-green-600">{mutatedAxis.horizontal.left}</span>
-                          <span className="mx-1">/</span>
-                          <span className="text-green-600">{mutatedAxis.horizontal.right}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-2 text-xs text-gray-500">
-                      変更タイプ: {selectedMutator.name}
-                    </div>
-                  </div>
-                </div>
                 
                 {/* デバッグ用プレイヤーリンク */}
                 <div>

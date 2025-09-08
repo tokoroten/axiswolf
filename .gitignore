@@ -43,3 +43,7 @@ secrets/
 # OS specific
 Thumbs.db
 desktop.ini
+
+# Installer files
+*.msi
+*.exe

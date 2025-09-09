@@ -693,7 +693,7 @@ export default function Game() {
             </div>
             <div className="mt-3 text-xs text-amber-600">
               <div>【得点ルール】</div>
-              <div>村人：人狼を正しく指したら+1点（最多票になったら全員+1点）</div>
+              <div>村人：人狼を正しく指したら+1点（人狼が最多票になったら全員+1点）</div>
               <div>人狼：最多票を避けられたら+3点</div>
               <div className="text-red-600">ペナルティ：軸の名前を口に出したら-1点</div>
             </div>

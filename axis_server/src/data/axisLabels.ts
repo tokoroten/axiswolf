@@ -184,7 +184,6 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label116', positive: '肉系', negative: '野菜系', difficulty: 'easy' },
   { id: 'label117', positive: '炭水化物多め', negative: 'タンパク質多め', difficulty: 'hard' },
   { id: 'label118', positive: '朝食向き', negative: '夕食向き', difficulty: 'easy' },
-  { id: 'label120', positive: '炭酸', negative: '非炭酸', difficulty: 'easy' },
   
   // 清潔・メンテナンス系
   { id: 'label121', positive: '洗いやすい', negative: '洗いにくい', difficulty: 'easy' },

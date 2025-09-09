@@ -232,6 +232,7 @@ export default function Game() {
     const newRound = currentRound + 1;
     setCurrentRound(newRound);
     updateURLRound(newRound);
+    window.scrollTo(0, 0);
   };
 
   const handlePrevRound = () => {
@@ -239,6 +240,7 @@ export default function Game() {
       const newRound = currentRound - 1;
       setCurrentRound(newRound);
       updateURLRound(newRound);
+      window.scrollTo(0, 0);
     }
   };
 

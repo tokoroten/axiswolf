@@ -171,11 +171,8 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label107', positive: '使い捨て', negative: '繰り返し使える', difficulty: 'easy' },
   
   // 乗り物特有系
-  { id: 'label108', positive: '人力', negative: 'エンジン付き', difficulty: 'easy' },
   { id: 'label109', positive: '陸上', negative: '水上・空中', difficulty: 'easy' },
-  { id: 'label110', positive: '公共交通', negative: '個人所有', difficulty: 'easy' },
-  { id: 'label111', positive: '乗客が多い', negative: '乗客が少ない', difficulty: 'easy' },
-  { id: 'label112', positive: '電動', negative: 'ガソリン', difficulty: 'easy' },
+  { id: 'label110', positive: '公共', negative: '個人', difficulty: 'easy' },
   { id: 'label113', positive: '自動', negative: '手動', difficulty: 'hard' },
   
   // 食べ物特有系

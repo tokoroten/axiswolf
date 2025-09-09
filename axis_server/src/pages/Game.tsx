@@ -217,34 +217,6 @@ export default function Game() {
           }
         };
       }
-      case 'mutator4': // 縦軸と横軸を入れ替え
-        return {
-          ...axis,
-          vertical: {
-            top: axis.horizontal.left,
-            bottom: axis.horizontal.right
-          },
-          horizontal: {
-            left: axis.vertical.top,
-            right: axis.vertical.bottom
-          }
-        };
-      case 'mutator5': // 縦軸を反転
-        return {
-          ...axis,
-          vertical: {
-            top: axis.vertical.bottom,
-            bottom: axis.vertical.top
-          }
-        };
-      case 'mutator6': // 横軸を反転
-        return {
-          ...axis,
-          horizontal: {
-            left: axis.horizontal.right,
-            right: axis.horizontal.left
-          }
-        };
       default:
         return axis;
     }

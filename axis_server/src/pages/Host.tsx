@@ -60,7 +60,7 @@ export default function Host() {
     // 指定人数分のQRコードを生成
     for (let i = 1; i <= playerCount; i++) {
       const playerInfo = getPlayerName(i);
-      const url = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${i}&mode=${gameMode}${isOnlineMode ? '&online=true' : ''}`;
+      const url = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${i}&playerCount=${playerCount}&mode=${gameMode}${isOnlineMode ? '&online=true' : ''}`;
       
       try {
         const qrDataUrl = await QRCode.toDataURL(url, {

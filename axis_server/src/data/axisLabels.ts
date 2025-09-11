@@ -136,7 +136,7 @@ export const axisLabels: AxisLabel[] = [
   // 香り・匂い系
   { id: 'label89', positive: '香りが強い', negative: '無臭', difficulty: 'easy' },
   { id: 'label90', positive: 'いい匂い', negative: '臭い', difficulty: 'easy' },
-  { id: 'label91', positive: 'フルーティー', negative: 'スパイシー', difficulty: 'easy' },
+  { id: 'label91', positive: 'フルーティー', negative: 'ウッディー', difficulty: 'easy' },
   { id: 'label92', positive: '天然の香り', negative: '人工的な香り', difficulty: 'easy' },
   
   // 保存・賞味期限系

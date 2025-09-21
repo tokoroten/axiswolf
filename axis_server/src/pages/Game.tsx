@@ -318,21 +318,21 @@ export default function Game() {
               </svg>
 
               {/* 縦軸と横軸の線 */}
-              <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-500"></div>
-              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-500"></div>
+              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-400"></div>
+              <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-400"></div>
 
               {/* ラベル */}
               {/* A: 上 */}
-              <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl font-bold text-red-500 opacity-20 z-10">A</div>
+              <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl font-bold text-red-500 opacity-50 z-10">A</div>
 
               {/* B: 下 */}
-              <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 translate-y-1/2 text-6xl font-bold text-blue-500 opacity-20 z-10">B</div>
+              <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 translate-y-1/2 text-6xl font-bold text-blue-500 opacity-50 z-10">B</div>
 
               {/* C: 左 */}
-              <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2 text-6xl font-bold text-green-500 opacity-20 z-10">C</div>
+              <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2 text-6xl font-bold text-green-500 opacity-50 z-10">C</div>
 
               {/* D: 右 */}
-              <div className="absolute right-1/4 top-1/2 transform -translate-y-1/2 translate-x-1/2 text-6xl font-bold text-yellow-600 opacity-20 z-10">D</div>
+              <div className="absolute right-1/4 top-1/2 transform -translate-y-1/2 translate-x-1/2 text-6xl font-bold text-yellow-600 opacity-50 z-10">D</div>
               
               {/* ホストモードの場合、正解と人狼の両方を表示 */}
               {isHost ? (() => {

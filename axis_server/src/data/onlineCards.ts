@@ -962,7 +962,7 @@ export const cardPool: Card[] = [
   { id: 'co200', name: '拡張', category: 'concept' },
 ];
 
-// シードベースでカードを生成する関数
+// シードベースでカードを生成する関数（重複なし配布）
 export function generateCardsForPlayer(
   roomId: string,
   round: number,
@@ -970,12 +970,12 @@ export function generateCardsForPlayer(
   count: number = 5,
   mode: 'normal' | 'expert' = 'normal'
 ): Card[] {
-  // シード文字列を生成（roomId + round + playerIdの組み合わせで各プレイヤー固有）
-  const seedString = `${roomId}-round${round}-player${playerId}`;
-  
+  // シード文字列を生成（roomIdとroundのみ使用 - 全プレイヤー共通のシャッフル）
+  const seedString = `${roomId}-round${round}`;
+
   // seedrandomで決定的な乱数生成器を作成
   const rng = seedrandom(seedString);
-  
+
   // モードに応じてカードプールをフィルタリング
   let availableCards = [...cardPool];
   if (mode === 'normal') {
@@ -983,16 +983,26 @@ export function generateCardsForPlayer(
     availableCards = availableCards.filter(card => card.category !== 'concept');
   }
   // expert モードの場合は全カードが利用可能
-  
+
   // カードプールをシャッフル（Fisher-Yates）
-  const shuffled = availableCards;
+  const shuffled = [...availableCards];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  
-  // 先頭から指定枚数のカードを返す
-  return shuffled.slice(0, count);
+
+  // プレイヤーIDに応じて異なる範囲のカードを返す（重複防止）
+  const startIndex = (playerId - 1) * count;
+  const endIndex = startIndex + count;
+
+  // カードが足りない場合は最後から循環させる（大量のカードがあるので通常は発生しない）
+  if (endIndex > shuffled.length) {
+    const firstPart = shuffled.slice(startIndex);
+    const secondPart = shuffled.slice(0, count - firstPart.length);
+    return [...firstPart, ...secondPart];
+  }
+
+  return shuffled.slice(startIndex, endIndex);
 }
 
 // カードのカテゴリーごとの色

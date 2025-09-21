@@ -132,23 +132,6 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
             </ul>
           </section>
 
-          <section>
-            <h3 className="text-lg font-bold text-purple-600 mb-3">🎚️ 難易度モード</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-blue-50 p-3 rounded-lg">
-                <h4 className="font-bold text-blue-700">一般向け</h4>
-                <p className="text-sm text-gray-700">
-                  わかりやすい軸のみ（「かわいい/かっこいい」「新しい/古い」など）
-                </p>
-              </div>
-              <div className="bg-purple-50 p-3 rounded-lg">
-                <h4 className="font-bold text-purple-700">インテリ向け</h4>
-                <p className="text-sm text-gray-700">
-                  専門知識が必要な軸も含む（「株価が高い/低い」「輸出が多い/少ない」など）
-                </p>
-              </div>
-            </div>
-          </section>
 
           <section className="bg-green-50 p-4 rounded-lg">
             <h3 className="text-lg font-bold text-green-700 mb-2">💡 プレイのコツ</h3>

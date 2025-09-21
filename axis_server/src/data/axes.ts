@@ -3,9 +3,9 @@ import { getAxisLabelsByDifficulty } from './axisLabels';
 import { generateSeed } from '../utils/seedGenerator';
 
 // 軸の組み合わせを生成する関数
-export function generateAxis(seed: number, index: number, mode: 'normal' | 'expert' = 'normal'): Axis {
-  // 難易度に応じたラベルを取得
-  const availableLabels = getAxisLabelsByDifficulty(mode);
+export function generateAxis(seed: number, index: number): Axis {
+  // ラベルを取得
+  const availableLabels = getAxisLabelsByDifficulty();
   
   // シードベースで2つの異なるラベルを選択
   const label1Index = (seed + index * 7) % availableLabels.length;
@@ -40,4 +40,4 @@ export function generateAxis(seed: number, index: number, mode: 'normal' | 'expe
 
 // 事前定義された20個の軸を生成（互換性のため）
 const baseSeed = generateSeed('base-axes');
-export const axes: Axis[] = Array.from({ length: 20 }, (_, i) => generateAxis(baseSeed, i, 'expert')); // デフォルトはすべての軸を含む
+export const axes: Axis[] = Array.from({ length: 20 }, (_, i) => generateAxis(baseSeed, i));

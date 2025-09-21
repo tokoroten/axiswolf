@@ -22,8 +22,6 @@ export default function Game() {
   const [showRules, setShowRules] = useState(false);
   // URLパラメータから人数を取得、なければLocalStorageから
   const playerCount = parseInt(searchParams.get('playerCount') || localStorage.getItem('playerCount') || '4');
-  // ゲームモードを取得
-  const gameMode = (searchParams.get('mode') || localStorage.getItem('gameMode') || 'normal') as 'normal' | 'expert';
   // オンラインモードかどうか
   const isOnlineMode = searchParams.get('online') === 'true' || localStorage.getItem('isOnlineMode') === 'true';
   // オンラインモード用のカード
@@ -57,8 +55,8 @@ export default function Game() {
     // ルームID（keyword）とラウンド数から全員共通のラウンドシードを生成
     const roundSeed = generateSeed(`${keyword}-${currentRound}`);
     
-    // 難易度に応じた軸を生成（全員共通）
-    const selectedAxis = generateAxis(roundSeed, currentRound, gameMode);
+    // 軸を生成（全員共通）
+    const selectedAxis = generateAxis(roundSeed, currentRound);
     
     // ウルフを決定（ラウンドシード % プレイヤー数 + 1）
     const zureshaPlayerId = (roundSeed % playerCount) + 1;
@@ -80,7 +78,7 @@ export default function Game() {
     } else {
       setCurrentAxis(selectedAxis);
     }
-  }, [keyword, currentRound, playerId, playerCount, gameMode]);
+  }, [keyword, currentRound, playerId, playerCount]);
 
   useEffect(() => {
     if (keyword) {
@@ -97,12 +95,12 @@ export default function Game() {
         if (isHost || playerId === '0') {
           const allCards: Record<number, Card[]> = {};
           for (let i = 1; i <= playerCount; i++) {
-            allCards[i] = generateCardsForPlayer(keyword, currentRound, i, 5, gameMode);
+            allCards[i] = generateCardsForPlayer(keyword, currentRound, i, 5);
           }
           setAllPlayersCards(allCards);
         } else {
           // プレイヤーの場合
-          const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5, gameMode);
+          const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5);
           setPlayerCards(cards);
         }
       }
@@ -111,8 +109,8 @@ export default function Game() {
 
   // ミューテーター効果を軸に適用する関数
   const applyMutator = (axis: Axis, mutator: { id: string }, seed: number, originalAxis: Axis): Axis => {
-    // 難易度に応じたラベルを取得
-    const availableLabels = getAxisLabelsByDifficulty(gameMode);
+    // ラベルを取得
+    const availableLabels = getAxisLabelsByDifficulty();
     
     // 現在使われているラベルのインデックスと反転状態を取得
     const getCurrentLabelInfo = () => {
@@ -266,10 +264,6 @@ export default function Game() {
               <span className="text-gray-600">人数: </span>
               <span className="font-bold text-lg">{playerCount}人</span>
             </div>
-            <div>
-              <span className="text-gray-600">モード: </span>
-              <span className="font-bold text-lg">{gameMode === 'normal' ? '一般向け' : 'インテリ向け'}</span>
-            </div>
             {!isHost && (
               <div>
                 <span className="text-gray-600">プレイヤー: </span>
@@ -338,7 +332,7 @@ export default function Game() {
               {isHost ? (() => {
                 // ラウンドシード生成
                 const roundSeed = generateSeed(`${keyword}-${currentRound}`);
-                const originalAxis = generateAxis(roundSeed, currentRound, gameMode);
+                const originalAxis = generateAxis(roundSeed, currentRound);
                 
                 // ウルフを決定
                 // const zureshaPlayerId = (roundSeed % playerCount) + 1;
@@ -503,7 +497,7 @@ export default function Game() {
                       const playerInfo = getPlayerName(pid);
                       const baseUrl = window.location.origin;
                       const basePath = import.meta.env.BASE_URL; // '/' または '/axiswolf/'
-                      const playerUrl = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${pid}&mode=${gameMode}&round=${currentRound}&playerCount=${playerCount}${isOnlineMode ? '&online=true' : ''}`;
+                      const playerUrl = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${pid}&round=${currentRound}&playerCount=${playerCount}${isOnlineMode ? '&online=true' : ''}`;
                       return (
                         <a
                           key={pid}

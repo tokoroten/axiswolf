@@ -19,10 +19,6 @@ export default function Host() {
     // LocalStorageから保存されたプレイヤー人数を読み込み
     return parseInt(localStorage.getItem('playerCount') || '4');
   });
-  const [gameMode, setGameMode] = useState<'normal' | 'expert'>(() => {
-    // LocalStorageから保存されたゲームモードを読み込み
-    return (localStorage.getItem('gameMode') || 'normal') as 'normal' | 'expert';
-  });
   const [isOnlineMode, setIsOnlineMode] = useState(() => {
     // LocalStorageから保存されたオンラインモードを読み込み
     return localStorage.getItem('isOnlineMode') === 'true';
@@ -46,7 +42,6 @@ export default function Host() {
     // パスコード、プレイヤー人数、ゲームモード、オンラインモードをLocalStorageに保存
     localStorage.setItem('gameKeyword', keyword);
     localStorage.setItem('playerCount', playerCount.toString());
-    localStorage.setItem('gameMode', gameMode);
     localStorage.setItem('isOnlineMode', isOnlineMode.toString());
     generatePlayerQRs();
   };
@@ -60,7 +55,7 @@ export default function Host() {
     // 指定人数分のQRコードを生成
     for (let i = 1; i <= playerCount; i++) {
       const playerInfo = getPlayerName(i);
-      const url = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${i}&playerCount=${playerCount}&mode=${gameMode}${isOnlineMode ? '&online=true' : ''}`;
+      const url = `${baseUrl}${basePath}game?keyword=${encodeURIComponent(keyword)}&pid=${i}&playerCount=${playerCount}${isOnlineMode ? '&online=true' : ''}`;
       
       try {
         const qrDataUrl = await QRCode.toDataURL(url, {
@@ -87,7 +82,7 @@ export default function Host() {
   };
 
   const startGame = () => {
-    navigate(`/game?keyword=${encodeURIComponent(keyword)}&host=true&playerCount=${playerCount}&mode=${gameMode}${isOnlineMode ? '&online=true' : ''}`);
+    navigate(`/game?keyword=${encodeURIComponent(keyword)}&host=true&playerCount=${playerCount}${isOnlineMode ? '&online=true' : ''}`);
   };
 
   return (
@@ -135,38 +130,6 @@ export default function Host() {
                   <option value={7}>7人</option>
                   <option value={8}>8人</option>
                 </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ゲームモード
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setGameMode('normal')}
-                    className={`px-4 py-3 rounded-lg font-medium transition-colors ${
-                      gameMode === 'normal'
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <div className="font-bold">一般向け</div>
-                    <div className="text-xs mt-1">わかりやすい軸のみ</div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setGameMode('expert')}
-                    className={`px-4 py-3 rounded-lg font-medium transition-colors ${
-                      gameMode === 'expert'
-                        ? 'bg-purple-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <div className="font-bold">インテリ向け</div>
-                    <div className="text-xs mt-1">専門知識が必要な軸も含む</div>
-                  </button>
-                </div>
               </div>
               
               <div>
@@ -222,7 +185,7 @@ export default function Host() {
                 <div className="text-sm text-gray-600">パスコード</div>
                 <div className="text-2xl font-bold font-mono">{keyword}</div>
                 <div className="text-sm text-gray-600 mt-2">
-                  プレイヤー人数: {playerCount}人 | モード: {gameMode === 'normal' ? '一般向け' : 'インテリ向け'} | {isOnlineMode ? 'オンラインプレイ' : '通常プレイ'}
+                  プレイヤー人数: {playerCount}人 | {isOnlineMode ? 'オンラインプレイ' : '通常プレイ'}
                 </div>
               </div>
               <button

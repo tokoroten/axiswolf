@@ -3,7 +3,7 @@ export interface AxisLabel {
   id: string;
   positive: string;
   negative: string;
-  difficulty: 'easy' | 'hard'; // easy: 一般向け, hard: インテリ向け
+  difficulty: 'easy' | 'hard'; // 互換性のために残すが、すべてeasyとして扱う
 }
 
 export const axisLabels: AxisLabel[] = [
@@ -204,12 +204,7 @@ export const axisLabels: AxisLabel[] = [
 ];
 
 // 難易度でフィルタリングする関数
-export function getAxisLabelsByDifficulty(mode: 'normal' | 'expert'): AxisLabel[] {
-  if (mode === 'normal') {
-    // 一般向け: 低難易度のみ
-    return axisLabels.filter(label => label.difficulty === 'easy');
-  } else {
-    // インテリ向け: 低難易度 + 高難易度（すべて）
-    return axisLabels;
-  }
+export function getAxisLabelsByDifficulty(): AxisLabel[] {
+  // expertモードを削除したため、常にeasyのみを返す
+  return axisLabels.filter(label => label.difficulty === 'easy');
 }

@@ -146,13 +146,7 @@ export const axisLabels: AxisLabel[] = [
   
   // 製造・素材系
   { id: 'label103', positive: '天然素材', negative: '合成素材' },
-    
-  // 食べ物特有系
-  { id: 'label114', positive: '主食', negative: 'おかず・おやつ' },
-  { id: 'label115', positive: '和食', negative: '洋食' },
-  { id: 'label116', positive: '肉系', negative: '野菜系' },
-  { id: 'label118', positive: '朝食向き', negative: '夕食向き' },
-  
+      
   // 清潔・メンテナンス系
   { id: 'label121', positive: '洗いやすい', negative: '洗いにくい' },
   { id: 'label122', positive: 'メンテナンス簡単', negative: 'メンテナンス大変' },
@@ -166,7 +160,6 @@ export const axisLabels: AxisLabel[] = [
   // 追加形容詞系
   { id: 'label230', positive: '強い', negative: '弱い' },
   { id: 'label231', positive: '美しい', negative: '醜い' },
-  { id: 'label232', positive: '若い', negative: '年老いた' },
   { id: 'label233', positive: '賢い', negative: '愚か' },
   { id: 'label234', positive: '勇敢', negative: '臆病' },
   { id: 'label235', positive: 'アクティブ', negative: 'パッシブ' },
@@ -175,18 +168,15 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label238', positive: '濃い', negative: '薄い' },
   { id: 'label239', positive: '鋭い', negative: '鈍い' },
   { id: 'label240', positive: '滑らか', negative: '粗い' },
-  { id: 'label241', positive: '透明', negative: '不透明' },
   { id: 'label242', positive: '柔軟', negative: '硬直' },
   { id: 'label243', positive: '豪華', negative: '質素' },
   { id: 'label244', positive: 'モダン', negative: 'レトロ' },
   { id: 'label245', positive: 'オープン', negative: 'クローズド' },
-  { id: 'label246', positive: '積極的', negative: '消極的' },
   { id: 'label247', positive: '活発', negative: '不活発' },
   { id: 'label248', positive: '鮮やか', negative: 'くすんだ' },
   { id: 'label249', positive: 'リッチ', negative: 'プア' },
   { id: 'label250', positive: 'スムーズ', negative: 'ギクシャク' },
   { id: 'label251', positive: '繊細', negative: '大雑把' },
-  { id: 'label252', positive: '規則的', negative: '不規則' },
   { id: 'label253', positive: '安定', negative: '不安定' },
   { id: 'label254', positive: '便利', negative: '不便' },
   { id: 'label255', positive: '快適', negative: '不快' },
@@ -194,7 +184,6 @@ export const axisLabels: AxisLabel[] = [
   { id: 'label257', positive: '正確', negative: '不正確' },
   { id: 'label258', positive: '効率的', negative: '非効率' },
   { id: 'label259', positive: '独創的', negative: '平凡' },
-
 ];
 
 // すべての軸ラベルを返す関数

@@ -301,26 +301,38 @@ export default function Game() {
         <div className="bg-white rounded-xl shadow-lg p-8 mb-6">
           <div className="relative" style={{ paddingTop: '100%' }}>
             <div className="absolute inset-0">
-              {/* 象限の背景色とラベル */}
-              {/* A: 右上 */}
-              <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-red-100 opacity-60"></div>
-              <div className="absolute top-8 right-8 text-6xl font-bold text-red-500 opacity-70">A</div>
-              
-              {/* B: 左上 */}
-              <div className="absolute top-0 left-0 w-1/2 h-1/2 bg-blue-100 opacity-60"></div>
-              <div className="absolute top-8 left-8 text-6xl font-bold text-blue-500 opacity-70">B</div>
-              
-              {/* C: 左下 */}
-              <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-green-100 opacity-60"></div>
-              <div className="absolute bottom-8 left-8 text-6xl font-bold text-green-500 opacity-70">C</div>
-              
-              {/* D: 右下 */}
-              <div className="absolute bottom-0 right-0 w-1/2 h-1/2 bg-yellow-100 opacity-60"></div>
-              <div className="absolute bottom-8 right-8 text-6xl font-bold text-yellow-600 opacity-70">D</div>
-              
+              {/* 対角線で区切られた三角形エリア */}
+              {/* SVGで三角形エリアを描画 */}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                {/* 上の三角形 (A) */}
+                <path d="M 0 0 L 50 50 L 100 0 Z" fill="#fee2e2" fillOpacity="0.6" />
+                {/* 左の三角形 (C) */}
+                <path d="M 0 0 L 50 50 L 0 100 Z" fill="#dcfce7" fillOpacity="0.6" />
+                {/* 下の三角形 (B) */}
+                <path d="M 0 100 L 50 50 L 100 100 Z" fill="#dbeafe" fillOpacity="0.6" />
+                {/* 右の三角形 (D) */}
+                <path d="M 100 0 L 50 50 L 100 100 Z" fill="#fef3c7" fillOpacity="0.6" />
+                {/* 対角線 */}
+                <line x1="0" y1="0" x2="100" y2="100" stroke="#d1d5db" strokeWidth="0.1" strokeOpacity="0.3" />
+                <line x1="100" y1="0" x2="0" y2="100" stroke="#d1d5db" strokeWidth="0.1" strokeOpacity="0.3" />
+              </svg>
+
               {/* 縦軸と横軸の線 */}
-              <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-300"></div>
-              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-300"></div>
+              <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-gray-500"></div>
+              <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gray-500"></div>
+
+              {/* ラベル */}
+              {/* A: 上 */}
+              <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl font-bold text-red-500 opacity-20 z-10">A</div>
+
+              {/* B: 下 */}
+              <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 translate-y-1/2 text-6xl font-bold text-blue-500 opacity-20 z-10">B</div>
+
+              {/* C: 左 */}
+              <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2 text-6xl font-bold text-green-500 opacity-20 z-10">C</div>
+
+              {/* D: 右 */}
+              <div className="absolute right-1/4 top-1/2 transform -translate-y-1/2 translate-x-1/2 text-6xl font-bold text-yellow-600 opacity-20 z-10">D</div>
               
               {/* ホストモードの場合、正解と人狼の両方を表示 */}
               {isHost ? (() => {
@@ -341,23 +353,23 @@ export default function Game() {
                   <>
                     {/* 正解の軸（実線） */}
                     <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-                      <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg border-2 border-blue-500">
-                        {originalAxis.vertical.top}
+                      <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-400 shadow-md">
+                        <span className="text-red-600 mr-1">(A)</span> {originalAxis.vertical.top}
                       </div>
                     </div>
                     <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                      <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg border-2 border-blue-500">
-                        {originalAxis.vertical.bottom}
+                      <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-400 shadow-md">
+                        <span className="text-blue-600 mr-1">(B)</span> {originalAxis.vertical.bottom}
                       </div>
                     </div>
                     <div className="absolute left-2 top-1/2 transform -translate-y-1/2">
-                      <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg border-2 border-green-500">
-                        {originalAxis.horizontal.left}
+                      <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-400 shadow-md">
+                        <span className="text-green-600 mr-1">(C)</span> {originalAxis.horizontal.left}
                       </div>
                     </div>
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                      <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg border-2 border-green-500">
-                        {originalAxis.horizontal.right}
+                      <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-400 shadow-md">
+                        <span className="text-yellow-700 mr-1">(D)</span> {originalAxis.horizontal.right}
                       </div>
                     </div>
                     
@@ -377,14 +389,14 @@ export default function Game() {
                       </div>
                     )}
                     {mutatedAxis.horizontal.left !== originalAxis.horizontal.left && (
-                      <div className="absolute left-2 top-1/3 transform -translate-y-1/2">
+                      <div className="absolute left-2 top-[56%] transform -translate-y-1/2">
                         <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
                           <span className="text-red-600">人狼: {mutatedAxis.horizontal.left}</span>
                         </div>
                       </div>
                     )}
                     {mutatedAxis.horizontal.right !== originalAxis.horizontal.right && (
-                      <div className="absolute right-2 top-1/3 transform -translate-y-1/2">
+                      <div className="absolute right-2 top-[56%] transform -translate-y-1/2">
                         <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
                           <span className="text-red-600">人狼: {mutatedAxis.horizontal.right}</span>
                         </div>
@@ -396,23 +408,23 @@ export default function Game() {
                 <>
                   {/* 通常プレイヤーの軸表示 */}
                   <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg">
-                      {currentAxis.vertical.top}
+                    <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-300 shadow-md">
+                      <span className="text-red-600 mr-1">(A)</span> {currentAxis.vertical.top}
                     </div>
                   </div>
                   <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-                    <div className="bg-blue-100 px-4 py-2 rounded-lg font-bold text-lg">
-                      {currentAxis.vertical.bottom}
+                    <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-300 shadow-md">
+                      <span className="text-blue-600 mr-1">(B)</span> {currentAxis.vertical.bottom}
                     </div>
                   </div>
                   <div className="absolute left-2 top-1/2 transform -translate-y-1/2">
-                    <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg">
-                      {currentAxis.horizontal.left}
+                    <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-300 shadow-md">
+                      <span className="text-green-600 mr-1">(C)</span> {currentAxis.horizontal.left}
                     </div>
                   </div>
                   <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-                    <div className="bg-green-100 px-4 py-2 rounded-lg font-bold text-lg">
-                      {currentAxis.horizontal.right}
+                    <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-300 shadow-md">
+                      <span className="text-yellow-700 mr-1">(D)</span> {currentAxis.horizontal.right}
                     </div>
                   </div>
                 </>

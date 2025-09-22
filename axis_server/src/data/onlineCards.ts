@@ -4,7 +4,7 @@ import seedrandom from 'seedrandom';
 export interface Card {
   id: string;
   name: string;
-  category: 'food' | 'item' | 'place' | 'animal' | 'plant';
+  category: 'food' | 'item' | 'place' | 'animal' | 'plant' | 'entertainment' | 'sport' | 'weather' | 'vehicle';
   imageUrl?: string;
 }
 
@@ -748,14 +748,94 @@ export const cardPool: Card[] = [
   { id: 'i278', name: '朱肉', category: 'item' },
   { id: 'i279', name: 'スタンプ', category: 'item' },
   { id: 'i280', name: 'インク', category: 'item' },
+
+  // エンタメ
+  { id: 'e01', name: '映画', category: 'entertainment' },
+  { id: 'e02', name: 'アニメ', category: 'entertainment' },
+  { id: 'e03', name: 'ドラマ', category: 'entertainment' },
+  { id: 'e04', name: '音楽', category: 'entertainment' },
+  { id: 'e05', name: 'ゲーム', category: 'entertainment' },
+  { id: 'e06', name: '漫画', category: 'entertainment' },
+  { id: 'e07', name: '小説', category: 'entertainment' },
+  { id: 'e08', name: 'YouTube', category: 'entertainment' },
+  { id: 'e09', name: 'TikTok', category: 'entertainment' },
+  { id: 'e10', name: 'Instagram', category: 'entertainment' },
+  { id: 'e11', name: 'Twitter', category: 'entertainment' },
+  { id: 'e12', name: 'ポッドキャスト', category: 'entertainment' },
+  { id: 'e13', name: 'ラジオ', category: 'entertainment' },
+  { id: 'e14', name: 'テレビ番組', category: 'entertainment' },
+  { id: 'e15', name: 'お笑い', category: 'entertainment' },
+  { id: 'e16', name: 'ミュージカル', category: 'entertainment' },
+  { id: 'e17', name: '演劇', category: 'entertainment' },
+  { id: 'e18', name: 'コンサート', category: 'entertainment' },
+  { id: 'e19', name: 'フェス', category: 'entertainment' },
+  { id: 'e20', name: 'カラオケ', category: 'entertainment' },
+
+  // スポーツ
+  { id: 's01', name: 'サッカー', category: 'sport' },
+  { id: 's02', name: '野球', category: 'sport' },
+  { id: 's03', name: 'バスケットボール', category: 'sport' },
+  { id: 's04', name: 'テニス', category: 'sport' },
+  { id: 's05', name: 'ゴルフ', category: 'sport' },
+  { id: 's06', name: '水泳', category: 'sport' },
+  { id: 's07', name: '陸上', category: 'sport' },
+  { id: 's08', name: '体操', category: 'sport' },
+  { id: 's09', name: '柔道', category: 'sport' },
+  { id: 's10', name: '剣道', category: 'sport' },
+  { id: 's11', name: '空手', category: 'sport' },
+  { id: 's12', name: 'ボクシング', category: 'sport' },
+  { id: 's13', name: 'バドミントン', category: 'sport' },
+  { id: 's14', name: '卓球', category: 'sport' },
+  { id: 's15', name: 'バレーボール', category: 'sport' },
+  { id: 's16', name: 'ラグビー', category: 'sport' },
+  { id: 's17', name: 'スキー', category: 'sport' },
+  { id: 's18', name: 'スノーボード', category: 'sport' },
+  { id: 's19', name: 'スケート', category: 'sport' },
+  { id: 's20', name: 'サーフィン', category: 'sport' },
+
+  // 乗り物
+  { id: 'v01', name: '自動車', category: 'vehicle' },
+  { id: 'v02', name: '自転車', category: 'vehicle' },
+  { id: 'v03', name: 'バイク', category: 'vehicle' },
+  { id: 'v04', name: '電車', category: 'vehicle' },
+  { id: 'v05', name: '新幹線', category: 'vehicle' },
+  { id: 'v06', name: '飛行機', category: 'vehicle' },
+  { id: 'v07', name: 'ヘリコプター', category: 'vehicle' },
+  { id: 'v08', name: '船', category: 'vehicle' },
+  { id: 'v09', name: 'ヨット', category: 'vehicle' },
+  { id: 'v10', name: 'バス', category: 'vehicle' },
+  { id: 'v11', name: 'タクシー', category: 'vehicle' },
+  { id: 'v12', name: 'トラック', category: 'vehicle' },
+  { id: 'v13', name: '救急車', category: 'vehicle' },
+  { id: 'v14', name: '消防車', category: 'vehicle' },
+  { id: 'v15', name: 'パトカー', category: 'vehicle' },
+  { id: 'v16', name: 'ロケット', category: 'vehicle' },
+  { id: 'v17', name: '潜水艦', category: 'vehicle' },
+  { id: 'v18', name: 'モノレール', category: 'vehicle' },
+  { id: 'v19', name: 'ロープウェイ', category: 'vehicle' },
+  { id: 'v20', name: 'スケートボード', category: 'vehicle' },
+  { id: 'v21', name: 'キックボード', category: 'vehicle' },
+  { id: 'v22', name: 'セグウェイ', category: 'vehicle' },
+  { id: 'v23', name: '馬車', category: 'vehicle' },
+  { id: 'v24', name: '人力車', category: 'vehicle' },
+  { id: 'v25', name: 'カヌー', category: 'vehicle' },
 ];
 
-// シードベースでカードを生成する関数（重複なし配布）
+// テーマに応じてカードをフィルタリング
+export function filterCardsByTheme(categories: string[]): Card[] {
+  if (!categories || categories.length === 0) {
+    return cardPool; // 空配列の場合はすべて
+  }
+  return cardPool.filter(card => categories.includes(card.category));
+}
+
+// シードベースでカードを生成する関数（重複なし配布、テーマ対応）
 export function generateCardsForPlayer(
   roomId: string,
   round: number,
   playerId: number,
-  count: number = 5
+  count: number = 5,
+  themeCategories?: string[]
 ): Card[] {
   // シード文字列を生成（roomIdとroundのみ使用 - 全プレイヤー共通のシャッフル）
   const seedString = `${roomId}-round${round}`;
@@ -763,8 +843,10 @@ export function generateCardsForPlayer(
   // seedrandomで決定的な乱数生成器を作成
   const rng = seedrandom(seedString);
 
-  // カードプールをコピー
-  let availableCards = [...cardPool];
+  // テーマに応じてカードプールをフィルタリング
+  let availableCards = themeCategories
+    ? filterCardsByTheme(themeCategories)
+    : [...cardPool];
 
   // カードプールをシャッフル（Fisher-Yates）
   const shuffled = [...availableCards];
@@ -794,6 +876,10 @@ export const categoryColors = {
   place: '#32CD32',     // ライムグリーン
   animal: '#FF6B6B',    // コーラルレッド
   plant: '#228B22',     // フォレストグリーン
+  entertainment: '#9370DB', // ミディアムパープル
+  sport: '#FF69B4',     // ホットピンク
+  weather: '#87CEEB',   // スカイブルー
+  vehicle: '#FFD700',   // ゴールド
 };
 
 // カテゴリーの表示名マッピング
@@ -803,4 +889,8 @@ export const categoryDisplayNames = {
   place: '場所',
   animal: '動物',
   plant: '植物',
+  entertainment: 'エンタメ',
+  sport: 'スポーツ',
+  weather: '天候',
+  vehicle: '乗り物',
 };

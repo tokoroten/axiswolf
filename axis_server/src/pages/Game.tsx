@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { generateAxis } from '../data/axes';
+import { generateAxis, generateAxisForTheme } from '../data/axes';
 import { getAxisLabelsByDifficulty } from '../data/axisLabels';
 import { mutators } from '../data/mutators';
 import { generateSeed } from '../utils/seedGenerator';
@@ -8,13 +8,14 @@ import type { Axis } from '../types';
 import RulesModal from '../components/RulesModal';
 import { getPlayerName } from '../data/playerNames';
 import { generateCardsForPlayer, categoryColors, categoryDisplayNames, type Card } from '../data/onlineCards';
+import { getThemeById, type ThemeType } from '../data/themes';
 
 export default function Game() {
   const [searchParams, setSearchParams] = useSearchParams();
   const keyword = searchParams.get('keyword') || '';
   const playerId = searchParams.get('pid') || localStorage.getItem('playerId') || '0';
   const isHost = searchParams.get('host') === 'true';
-  
+
   // URLからラウンド数を取得、なければ0
   const initialRound = parseInt(searchParams.get('round') || '0');
   const [currentRound, setCurrentRound] = useState(initialRound);
@@ -28,6 +29,26 @@ export default function Game() {
   const [playerCards, setPlayerCards] = useState<Card[]>([]);
   // 全プレイヤーのカード（ホスト用）
   const [allPlayersCards, setAllPlayersCards] = useState<Record<number, Card[]>>({});
+  // 現在のラウンドのテーマ
+  const [currentThemeName, setCurrentThemeName] = useState<string>('');
+
+  // 選択されたテーマを取得
+  const selectedThemes = (() => {
+    const themesParam = searchParams.get('themes');
+    if (themesParam) {
+      return themesParam.split(',');
+    }
+    // LocalStorageから取得
+    const saved = localStorage.getItem('selectedThemes');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return ['food', 'daily', 'entertainment'];
+      }
+    }
+    return ['food', 'daily', 'entertainment'];
+  })();
   
   // 得点管理（ホスト用）
   const [scores, setScores] = useState<Record<number, number>>(() => {
@@ -54,9 +75,24 @@ export default function Game() {
   const loadRound = useCallback(() => {
     // ルームID（keyword）とラウンド数から全員共通のラウンドシードを生成
     const roundSeed = generateSeed(`${keyword}-${currentRound}`);
-    
-    // 軸を生成（全員共通）
-    const selectedAxis = generateAxis(roundSeed, currentRound);
+
+    // 現在のラウンドのテーマを選択（複数テーマから1つ選択）
+    const currentTheme = (() => {
+      if (selectedThemes.length === 0) return undefined;
+      const themeIndex = roundSeed % selectedThemes.length;
+      const themeId = selectedThemes[themeIndex];
+      return getThemeById(themeId as ThemeType);
+    })();
+
+    // テーマ名を保存
+    if (currentTheme) {
+      setCurrentThemeName(currentTheme.name);
+    }
+
+    // 軸を生成（全員共通、テーマに応じて）
+    const selectedAxis = currentTheme
+      ? generateAxisForTheme(roundSeed, currentRound, currentTheme)
+      : generateAxis(roundSeed, currentRound);
     
     // ウルフを決定（ラウンドシード % プレイヤー数 + 1）
     const zureshaPlayerId = (roundSeed % playerCount) + 1;
@@ -78,7 +114,7 @@ export default function Game() {
     } else {
       setCurrentAxis(selectedAxis);
     }
-  }, [keyword, currentRound, playerId, playerCount]);
+  }, [keyword, currentRound, playerId, playerCount, selectedThemes]);
 
   useEffect(() => {
     if (keyword) {
@@ -88,24 +124,51 @@ export default function Game() {
         localStorage.setItem('playerId', playerId);
       }
       loadRound();
-      
+
       // オンラインモードの場合、カードを生成
       if (isOnlineMode) {
+        // ルームID（keyword）とラウンド数から全員共通のラウンドシードを生成
+        const roundSeed = generateSeed(`${keyword}-${currentRound}`);
+
+        // 現在のラウンドのテーマを選択（複数テーマから1つ選択）
+        const currentTheme = (() => {
+          if (selectedThemes.length === 0) return undefined;
+          const themeIndex = roundSeed % selectedThemes.length;
+          const themeId = selectedThemes[themeIndex];
+          return getThemeById(themeId as any);
+        })();
+
+        // テーマのカードカテゴリーを取得（全テーマのカテゴリーを結合）
+        const themeCategories = (() => {
+          if (!currentTheme || currentTheme.id === 'mixed') {
+            // ミックスモードの場合、選択されたすべてのテーマのカテゴリーを使用
+            const allCategories = new Set<string>();
+            selectedThemes.forEach((themeId: string) => {
+              const theme = getThemeById(themeId as ThemeType);
+              if (theme && theme.cardCategories) {
+                theme.cardCategories.forEach(cat => allCategories.add(cat));
+              }
+            });
+            return Array.from(allCategories);
+          }
+          return currentTheme.cardCategories;
+        })();
+
         // ホストの場合
         if (isHost || playerId === '0') {
           const allCards: Record<number, Card[]> = {};
           for (let i = 1; i <= playerCount; i++) {
-            allCards[i] = generateCardsForPlayer(keyword, currentRound, i, 5);
+            allCards[i] = generateCardsForPlayer(keyword, currentRound, i, 5, themeCategories);
           }
           setAllPlayersCards(allCards);
         } else {
           // プレイヤーの場合
-          const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5);
+          const cards = generateCardsForPlayer(keyword, currentRound, parseInt(playerId), 5, themeCategories);
           setPlayerCards(cards);
         }
       }
     }
-  }, [keyword, currentRound, playerId, loadRound, isOnlineMode]);
+  }, [keyword, currentRound, playerId, loadRound, isOnlineMode, selectedThemes]);
 
   // ミューテーター効果を軸に適用する関数
   const applyMutator = (axis: Axis, mutator: { id: string }, seed: number, originalAxis: Axis): Axis => {
@@ -282,6 +345,12 @@ export default function Game() {
               <span className="text-gray-600">ラウンド: </span>
               <span className="font-bold text-lg">{currentRound + 1}</span>
             </div>
+            {isOnlineMode && currentThemeName && (
+              <div>
+                <span className="text-gray-600">テーマ: </span>
+                <span className="font-bold text-lg text-purple-600">{currentThemeName}</span>
+              </div>
+            )}
           </div>
           <button
             onClick={() => setShowRules(true)}

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { generateAxis, generateAxisForTheme } from '../data/axes';
-import { getAxisLabelsByDifficulty } from '../data/axisLabels';
+import { axisLabels } from '../data/axisLabels';
 import { mutators } from '../data/mutators';
 import { generateSeed } from '../utils/seedGenerator';
 import type { Axis } from '../types';
@@ -9,6 +9,8 @@ import RulesModal from '../components/RulesModal';
 import { getPlayerName } from '../data/playerNames';
 import { generateCardsForPlayer, categoryColors, categoryDisplayNames, type Card } from '../data/onlineCards';
 import { getThemeById, type ThemeType } from '../data/themes';
+import type { Theme } from '../data/themes';
+import seedrandom from 'seedrandom';
 
 export default function Game() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -32,22 +34,46 @@ export default function Game() {
   // 現在のラウンドのテーマ
   const [currentThemeName, setCurrentThemeName] = useState<string>('');
 
-  // 選択されたテーマを取得
+  // 選択されたテーマを取得（モードに応じてフィルタリング）
   const selectedThemes = (() => {
     const themesParam = searchParams.get('themes');
+    let themes: string[] = [];
+
     if (themesParam) {
-      return themesParam.split(',');
-    }
-    // LocalStorageから取得
-    const saved = localStorage.getItem('selectedThemes');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return ['food', 'daily', 'entertainment'];
+      themes = themesParam.split(',');
+    } else {
+      // LocalStorageから取得
+      const saved = localStorage.getItem('selectedThemes');
+      if (saved) {
+        try {
+          themes = JSON.parse(saved);
+        } catch {
+          themes = isOnlineMode ? ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'] : ['pack1'];
+        }
+      } else {
+        themes = isOnlineMode ? ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'] : ['pack1'];
       }
     }
-    return ['food', 'daily', 'entertainment'];
+
+    // モードに応じて有効なテーマのみをフィルタリング
+    const validThemes = themes.filter(themeId => {
+      const theme = getThemeById(themeId as ThemeType);
+      if (!theme) return false;
+
+      // オンラインモードの場合はオンライン専用テーマのみ
+      if (isOnlineMode) {
+        return theme.onlineOnly === true;
+      }
+      // 通常モードの場合はカードパックのみ
+      return theme.onlineOnly === false;
+    });
+
+    // 有効なテーマがない場合はデフォルトを返す
+    if (validThemes.length === 0) {
+      return isOnlineMode ? ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'] : ['pack1'];
+    }
+
+    return validThemes;
   })();
   
   // 得点管理（ホスト用）
@@ -95,7 +121,13 @@ export default function Game() {
     const selectedAxis = currentTheme
       ? generateAxisForTheme(roundSeed, currentRound, currentTheme)
       : generateAxis(roundSeed, currentRound);
-    
+
+    // デバッグ: 選ばれた軸を表示
+    console.log('Selected axis for theme:', currentTheme?.name, {
+      horizontal: `${selectedAxis.horizontal.left} - ${selectedAxis.horizontal.right}`,
+      vertical: `${selectedAxis.vertical.top} - ${selectedAxis.vertical.bottom}`
+    });
+
     // ウルフを決定（ラウンドシード % プレイヤー数 + 1）
     const zureshaPlayerId = (roundSeed % playerCount) + 1;
     const playerIdNum = parseInt(playerId) || 0;
@@ -110,8 +142,13 @@ export default function Game() {
       const mutatorIndex = zureSeed % mutators.length;
       const selectedMutator = mutators[mutatorIndex];
       
-      // ミューテーター効果を適用
-      const mutatedAxis = applyMutator(selectedAxis, selectedMutator, zureSeed, selectedAxis);
+      // ミューテーター効果を適用（テーマを渡す）
+      const mutatedAxis = applyMutator(selectedAxis, selectedMutator, zureSeed, selectedAxis, currentTheme);
+      console.log('Wolf axis for theme:', currentTheme?.name, {
+        horizontal: `${mutatedAxis.horizontal.left} - ${mutatedAxis.horizontal.right}`,
+        vertical: `${mutatedAxis.vertical.top} - ${mutatedAxis.vertical.bottom}`,
+        mutator: selectedMutator.name
+      });
       setCurrentAxis(mutatedAxis);
     } else {
       setCurrentAxis(selectedAxis);
@@ -137,7 +174,7 @@ export default function Game() {
           if (selectedThemes.length === 0) return undefined;
           const themeIndex = roundSeed % selectedThemes.length;
           const themeId = selectedThemes[themeIndex];
-          return getThemeById(themeId as any);
+          return getThemeById(themeId as ThemeType);
         })();
 
         // テーマのカードカテゴリーを取得（全テーマのカテゴリーを結合）
@@ -170,12 +207,19 @@ export default function Game() {
         }
       }
     }
-  }, [keyword, currentRound, playerId, loadRound, isOnlineMode, selectedThemes]);
+  }, [keyword, currentRound, playerId, loadRound, isOnlineMode, selectedThemes, isHost, playerCount]);
 
   // ミューテーター効果を軸に適用する関数
-  const applyMutator = (axis: Axis, mutator: { id: string }, seed: number, originalAxis: Axis): Axis => {
-    // ラベルを取得
-    const availableLabels = getAxisLabelsByDifficulty();
+  const applyMutator = (axis: Axis, mutator: { id: string }, seed: number, originalAxis: Axis, currentTheme?: Theme): Axis => {
+    // テーマに応じたラベルを取得
+    const availableLabels = (() => {
+      if (!currentTheme || currentTheme.id === 'mixed') {
+        // テーマが指定されていない場合は全ラベルを使用
+        return axisLabels;
+      }
+      // テーマが指定されている場合は、そのテーマに適したラベルのみ
+      return axisLabels.filter(label => label.themes.includes(currentTheme.id));
+    })();
     
     // 現在使われているラベルのインデックスと反転状態を取得
     const getCurrentLabelInfo = () => {
@@ -220,11 +264,15 @@ export default function Game() {
     };
     
     // 異なるラベルを選択
-    const getAlternativeLabelIndex = (currentIndex: number, offset: number) => {
-      let newIndex = (seed + offset * 7) % availableLabels.length;
-      // 現在のラベルと同じにならないようにする
-      while (newIndex === currentIndex) {
-        newIndex = (newIndex + 1) % availableLabels.length;
+    const getAlternativeLabelIndex = (currentIndex: number) => {
+      // シード値から乱数生成器を作成
+      const rng = seedrandom(`${seed}-mutator`);
+      let newIndex = Math.floor(rng() * availableLabels.length);
+      // 現在のラベルと同じにならないようにする（-1の場合は無視）
+      if (currentIndex >= 0 && availableLabels.length > 1) {
+        while (newIndex === currentIndex) {
+          newIndex = Math.floor(rng() * availableLabels.length);
+        }
       }
       return newIndex;
     };
@@ -233,7 +281,7 @@ export default function Game() {
 
     switch (mutator.id) {
       case 'mutator1': { // 縦軸を別の軸に変更
-        const newVerticalIndex = getAlternativeLabelIndex(currentInfo.verticalIndex, 1);
+        const newVerticalIndex = getAlternativeLabelIndex(currentInfo.verticalIndex);
         const newLabel = availableLabels[newVerticalIndex];
         return {
           ...axis,
@@ -245,7 +293,7 @@ export default function Game() {
         };
       }
       case 'mutator2': { // 横軸を別の軸に変更
-        const newHorizontalIndex = getAlternativeLabelIndex(currentInfo.horizontalIndex, 2);
+        const newHorizontalIndex = getAlternativeLabelIndex(currentInfo.horizontalIndex);
         const newLabel = availableLabels[newHorizontalIndex];
         return {
           ...axis,
@@ -257,8 +305,8 @@ export default function Game() {
         };
       }
       case 'mutator3': { // 両軸を別の軸に変更
-        const newHorizontalIndex = getAlternativeLabelIndex(currentInfo.horizontalIndex, 3);
-        const newVerticalIndex = getAlternativeLabelIndex(currentInfo.verticalIndex, 5);
+        const newHorizontalIndex = getAlternativeLabelIndex(currentInfo.horizontalIndex);
+        const newVerticalIndex = getAlternativeLabelIndex(currentInfo.verticalIndex);
         // 両軸が同じにならないようにする
         let finalVerticalIndex = newVerticalIndex;
         while (finalVerticalIndex === newHorizontalIndex) {
@@ -403,7 +451,18 @@ export default function Game() {
               {isHost ? (() => {
                 // ラウンドシード生成
                 const roundSeed = generateSeed(`${keyword}-${currentRound}`);
-                const originalAxis = generateAxis(roundSeed, currentRound);
+
+                // テーマに応じた軸生成（プレイヤー側と同じロジック）
+                const currentTheme = (() => {
+                  if (selectedThemes.length === 0) return undefined;
+                  const themeIndex = roundSeed % selectedThemes.length;
+                  const themeId = selectedThemes[themeIndex];
+                  return getThemeById(themeId as ThemeType);
+                })();
+
+                const originalAxis = currentTheme
+                  ? generateAxisForTheme(roundSeed, currentRound, currentTheme)
+                  : generateAxis(roundSeed, currentRound);
                 
                 // ウルフを決定
                 // const zureshaPlayerId = (roundSeed % playerCount) + 1;
@@ -412,7 +471,7 @@ export default function Game() {
                 const zureSeed = generateSeed(`${keyword}-${currentRound}-zure`);
                 const mutatorIndex = zureSeed % mutators.length;
                 const selectedMutator = mutators[mutatorIndex];
-                const mutatedAxis = applyMutator(originalAxis, selectedMutator, zureSeed, originalAxis);
+                const mutatedAxis = applyMutator(originalAxis, selectedMutator, zureSeed, originalAxis, currentTheme);
                 
                 return (
                   <>

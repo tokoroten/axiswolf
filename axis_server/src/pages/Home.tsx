@@ -199,10 +199,10 @@ export default function Home() {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  テーマ選択（複数選択可）
+                  {isOnlineMode ? 'テーマ選択（複数選択可）' : 'カードパック選択（複数選択可）'}
                 </label>
                 <div className="grid grid-cols-2 gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
-                  {themes.filter(t => t.id !== 'mixed' && t.id !== 'random').map(theme => (
+                  {themes.filter(t => t.id !== 'mixed' && t.id !== 'random' && t.onlineOnly === isOnlineMode).map(theme => (
                     <label
                       key={theme.id}
                       className={`
@@ -259,7 +259,7 @@ export default function Home() {
                 )}
                 {!isOnlineMode && (
                   <p className="text-amber-600 text-xs mt-2 bg-amber-50 p-2 rounded">
-                    💡 通常プレイでは軸のみがテーマに応じて調整されます（カードは手持ちのものを使用）
+                    💡 通常プレイではカードパックごとに用意されたカードを使用します（物理カード使用）
                   </p>
                 )}
               </div>

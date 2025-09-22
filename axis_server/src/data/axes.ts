@@ -1,30 +1,32 @@
 import type { Axis } from '../types';
-import { getAxisLabelsByDifficulty, axisLabels } from './axisLabels';
+import { axisLabels } from './axisLabels';
 import { generateSeed } from '../utils/seedGenerator';
 import type { Theme } from './themes';
+import seedrandom from 'seedrandom';
 
 // 軸の組み合わせを生成する関数
 export function generateAxis(seed: number, index: number): Axis {
   // ラベルを取得
-  const availableLabels = getAxisLabelsByDifficulty();
-  
-  // シードベースで2つの異なるラベルを選択
-  const label1Index = (seed + index * 7) % availableLabels.length;
-  let label2Index = (seed + index * 13 + 5) % availableLabels.length;
-  
+  const availableLabels = axisLabels;
+
+  // シード値から乱数生成器を作成
+  const rng = seedrandom(`${seed}-${index}`);
+
+  // 乱数で2つの異なるラベルを選択
+  const label1Index = Math.floor(rng() * availableLabels.length);
+  let label2Index = Math.floor(rng() * availableLabels.length);
+
   // 同じラベルが選ばれないようにする
   while (label2Index === label1Index) {
-    label2Index = (label2Index + 1) % availableLabels.length;
+    label2Index = Math.floor(rng() * availableLabels.length);
   }
-  
+
   const label1 = availableLabels[label1Index];
   const label2 = availableLabels[label2Index];
-  
+
   // 各軸のポジティブ/ネガティブをランダムに反転するかどうか決定
-  // 水平軸の反転（シードベースで決定）
-  const flipHorizontal = ((seed + index * 17) % 2) === 0;
-  // 垂直軸の反転（シードベースで決定）
-  const flipVertical = ((seed + index * 23) % 2) === 0;
+  const flipHorizontal = rng() < 0.5;
+  const flipVertical = rng() < 0.5;
   
   return {
     id: `axis${index}`,
@@ -41,15 +43,18 @@ export function generateAxis(seed: number, index: number): Axis {
 
 // テーマに応じた軸の組み合わせを生成する関数
 export function generateAxisForTheme(seed: number, index: number, theme?: Theme): Axis {
-  // テーマが指定されていない、またはmixedの場合はすべてのラベルを使用
-  if (!theme || theme.id === 'mixed') {
+  // テーマが指定されていない、またはmixed、またはカードパックの場合はすべてのラベルを使用
+  if (!theme || theme.id === 'mixed' || theme.id.startsWith('pack')) {
     return generateAxis(seed, index);
   }
 
   // テーマに適した軸ラベルのみをフィルタリング
   const availableLabels = axisLabels.filter(label =>
-    label.themes.includes(theme.id) || label.themes.length === 0 // テーマが指定されているか、全テーマ共通
+    label.themes.includes(theme.id) // このテーマに適したラベルのみ
   );
+
+  // デバッグ情報（簡潔版）
+  console.log(`[Axis Generation] Theme: ${theme.name}, Available axes: ${availableLabels.length}`);
 
   if (availableLabels.length < 2) {
     // 適合する軸が少なすぎる場合は通常の生成にフォールバック
@@ -57,21 +62,26 @@ export function generateAxisForTheme(seed: number, index: number, theme?: Theme)
     return generateAxis(seed, index);
   }
 
-  // シードベースで2つの異なるラベルを選択
-  const label1Index = (seed + index * 7) % availableLabels.length;
-  let label2Index = (seed + index * 13 + 5) % availableLabels.length;
+  // シード値から乱数生成器を作成
+  const rng = seedrandom(`${seed}-${index}-theme`);
+
+  // 乱数で2つの異なるラベルを選択
+  const label1Index = Math.floor(rng() * availableLabels.length);
+  let label2Index = Math.floor(rng() * availableLabels.length);
 
   // 同じラベルが選ばれないようにする
   while (label2Index === label1Index) {
-    label2Index = (label2Index + 1) % availableLabels.length;
+    label2Index = Math.floor(rng() * availableLabels.length);
   }
 
   const label1 = availableLabels[label1Index];
   const label2 = availableLabels[label2Index];
 
+  console.log(`[Axis Selected] H: ${label1.positive}⇔${label1.negative}, V: ${label2.positive}⇔${label2.negative}`);
+
   // 各軸のポジティブ/ネガティブをランダムに反転するかどうか決定
-  const flipHorizontal = ((seed + index * 17) % 2) === 0;
-  const flipVertical = ((seed + index * 23) % 2) === 0;
+  const flipHorizontal = rng() < 0.5;
+  const flipVertical = rng() < 0.5;
 
   return {
     id: `axis${index}`,

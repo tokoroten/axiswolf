@@ -42,17 +42,18 @@ export function generateAxis(seed: number, index: number): Axis {
 // テーマに応じた軸の組み合わせを生成する関数
 export function generateAxisForTheme(seed: number, index: number, theme?: Theme): Axis {
   // テーマが指定されていない、またはmixedの場合はすべてのラベルを使用
-  if (!theme || theme.id === 'mixed' || theme.compatibleAxisIds.length === 0) {
+  if (!theme || theme.id === 'mixed') {
     return generateAxis(seed, index);
   }
 
   // テーマに適した軸ラベルのみをフィルタリング
   const availableLabels = axisLabels.filter(label =>
-    theme.compatibleAxisIds.includes(label.id)
+    label.themes.includes(theme.id) || label.themes.length === 0 // テーマが指定されているか、全テーマ共通
   );
 
   if (availableLabels.length < 2) {
     // 適合する軸が少なすぎる場合は通常の生成にフォールバック
+    console.warn(`Not enough labels for theme ${theme.name}, falling back to all labels`);
     return generateAxis(seed, index);
   }
 

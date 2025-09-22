@@ -1,192 +1,186 @@
+import type { ThemeType } from './themes';
+
 // 個別の軸ラベル（対になる概念）
 export interface AxisLabel {
   id: string;
   positive: string;
   negative: string;
+  themes: ThemeType[]; // この軸が適用されるテーマ
+  description?: string; // 軸の説明（オプション）
 }
 
 export const axisLabels: AxisLabel[] = [
-  // 評価・人気系（一般向け）
-  { id: 'label1', positive: '子どもウケ', negative: '大人ウケ' },
-  { id: 'label2', positive: 'アメリカで人気', negative: 'アメリカで不人気' },
-  { id: 'label4', positive: '若者に人気', negative: '高齢者に人気' },
-  { id: 'label5', positive: '都市部で人気', negative: '地方で人気' },
-  { id: 'label8', positive: 'SNSで話題', negative: 'SNSで話題じゃない' },
-  
+  // 評価・人気系
+  { id: 'popularity_kids', positive: '子どもウケ', negative: '大人ウケ', themes: ['entertainment', 'place'], description: '年齢層による人気度' },
+  { id: 'popularity_us', positive: 'アメリカで人気', negative: 'アメリカで不人気', themes: ['entertainment'], description: 'アメリカでの人気度' },
+  { id: 'popularity_young', positive: '若者に人気', negative: '高齢者に人気', themes: ['entertainment', 'place'], description: '世代間の人気差' },
+  { id: 'popularity_urban', positive: '都市部で人気', negative: '地方で人気', themes: ['entertainment', 'place'], description: '地域による人気差' },
+  { id: 'popularity_sns', positive: 'SNSで話題', negative: 'SNSで話題じゃない', themes: ['entertainment', 'place'], description: 'SNSでの話題性' },
+
   // 価格・経済系
-  { id: 'label10', positive: '安い', negative: '高い' },
-  { id: 'label12', positive: '富裕層向け', negative: '一般層向け' },
-  
+  { id: 'price_level', positive: '安い', negative: '高い', themes: ['food', 'daily', 'vehicle'], description: '価格帯' },
+  { id: 'price_target', positive: '富裕層向け', negative: '一般層向け', themes: ['food', 'daily', 'vehicle'], description: 'ターゲット層' },
+
   // 健康・実用系
-  { id: 'label17', positive: '健康的', negative: '不健康' },
-  { id: 'label18', positive: '実用的', negative: '娯楽的' },
-  { id: 'label19', positive: '環境に優しい', negative: '環境に悪い' },
-  
+  { id: 'health', positive: '健康的', negative: '不健康', themes: ['food'], description: '健康への影響' },
+  { id: 'practical', positive: '実用的', negative: '娯楽的', themes: ['daily'], description: '実用性レベル' },
+  { id: 'eco', positive: '環境に優しい', negative: '環境に悪い', themes: ['vehicle'], description: '環境への影響' },
+
   // スタイル・見た目系
-  { id: 'label20', positive: 'かわいい', negative: 'かっこいい' },
-  { id: 'label21', positive: 'シンプル', negative: '複雑' },
-  { id: 'label22', positive: 'アナログ', negative: 'デジタル' },
-  { id: 'label23', positive: '伝統的', negative: '革新的' },
-  
+  { id: 'cute_cool', positive: 'かわいい', negative: 'かっこいい', themes: ['entertainment', 'animal', 'vehicle'], description: '見た目の印象' },
+  { id: 'simple_complex', positive: 'シンプル', negative: '複雑', themes: ['daily', 'vehicle'], description: 'デザインの複雑さ' },
+  { id: 'analog_digital', positive: 'アナログ', negative: 'デジタル', themes: ['daily', 'vehicle'], description: '技術タイプ' },
+  { id: 'traditional_modern', positive: '伝統的', negative: '革新的', themes: ['entertainment', 'vehicle'], description: '新旧の度合い' },
+
   // 文化・地域系
-  { id: 'label24', positive: '日本的', negative: '西洋的' },
+  { id: 'culture_jp_west', positive: '日本的', negative: '西洋的', themes: ['entertainment', 'place'], description: '文化圏' },
 
   // 時間・歴史系
-  { id: 'label30', positive: '古い', negative: '新しい' },
-  { id: 'label31', positive: '歴史が長い', negative: '歴史が短い' },
-  { id: 'label32', positive: '季節限定', negative: '通年販売' },
-  
+  { id: 'old_new', positive: '古い', negative: '新しい', themes: ['entertainment', 'place'], description: '時代' },
+  { id: 'history_long', positive: '歴史が長い', negative: '歴史が短い', themes: ['entertainment', 'place'], description: '歴史の長さ' },
+  { id: 'seasonal', positive: '季節限定', negative: '通年販売', themes: ['food'], description: '販売時期' },
+
   // ターゲット系
-  { id: 'label33', positive: '男性向け', negative: '女性向け' },
-  { id: 'label141', positive: '10代向け', negative: '50代向け' },
-  { id: 'label142', positive: '独身向け', negative: '既婚者向け' },
-  { id: 'label143', positive: '家族向け', negative: '一人暮らし向け' },
-  { id: 'label145', positive: '学生向け', negative: '社会人向け' },
-  { id: 'label153', positive: 'エコ意識高い人向け', negative: 'コスパ重視の人向け' },
-  { id: 'label154', positive: 'テック好き向け', negative: 'アナログ好き向け' },
-  { id: 'label155', positive: '都会人向け', negative: '田舎暮らし向け' },
-  { id: 'label158', positive: '忙しい人向け', negative: '時間がある人向け' },
-  { id: 'label159', positive: '理系', negative: '文系' },
+  { id: 'gender_target', positive: '男性向け', negative: '女性向け', themes: ['entertainment'], description: '性別ターゲット' },
+  { id: 'age_target', positive: '10代向け', negative: '50代向け', themes: ['entertainment'], description: '年代ターゲット' },
+  { id: 'family_target', positive: '家族向け', negative: '一人暮らし向け', themes: ['entertainment'], description: '世帯ターゲット' },
 
-  // 質感・感触系
-  { id: 'label41', positive: 'やわらかい', negative: '硬い' },
-  { id: 'label42', positive: 'つるつる', negative: 'ざらざら' },
-  { id: 'label43', positive: 'もちもち', negative: 'パサパサ' },
-  { id: 'label44', positive: 'ふわふわ', negative: 'ごつごつ' },
-  { id: 'label45', positive: 'さらさら', negative: 'べたべた' },
-  { id: 'label46', positive: 'しっとり', negative: 'カサカサ' },
-  { id: 'label47', positive: 'プルプル', negative: 'カチカチ' },
-  { id: 'label48', positive: 'もふもふ', negative: 'チクチク' },
-  
-  // 擬音・擬態語系（フーバなど）
-  { id: 'label49', positive: 'キラキラ', negative: 'ドロドロ' },
-  { id: 'label50', positive: 'ピカピカ', negative: 'ボロボロ' },
-  { id: 'label51', positive: 'ツヤツヤ', negative: 'くすんでる' },
-  { id: 'label52', positive: 'シャキシャキ', negative: 'ぐにゃぐにゃ' },
-  { id: 'label53', positive: 'パリパリ', negative: 'しなしな' },
-  { id: 'label54', positive: 'コリコリ', negative: 'ネバネバ' },
-  { id: 'label55', positive: 'サクサク', negative: 'ねっとり' },
-  { id: 'label56', positive: 'カリカリ', negative: 'ふにゃふにゃ' },
+  // 質感系（触覚）
+  { id: 'soft_hard', positive: 'やわらかい', negative: '硬い', themes: ['daily', 'animal'], description: '硬さ' },
+  { id: 'smooth_rough', positive: 'つるつる', negative: 'ざらざら', themes: ['daily'], description: '表面の滑らかさ' },
+  { id: 'mochi_pasa', positive: 'もちもち', negative: 'パサパサ', themes: ['food'], description: '食感（弾力）' },
+  { id: 'fluffy_hard', positive: 'ふわふわ', negative: 'ごつごつ', themes: ['daily', 'animal'], description: '質感の柔らかさ' },
+  { id: 'sara_beta', positive: 'さらさら', negative: 'べたべた', themes: ['daily'], description: '手触り' },
+  { id: 'mofu_chiku', positive: 'もふもふ', negative: 'チクチク', themes: ['animal'], description: '毛並み' },
 
-  // 味覚・風味系
-  { id: 'label57', positive: '甘い', negative: '辛い' },
-  { id: 'label58', positive: '酸っぱい', negative: '苦い' },
-  { id: 'label59', positive: 'しょっぱい', negative: '薄味' },
-  { id: 'label60', positive: 'こってり', negative: 'あっさり' },
-  { id: 'label62', positive: 'スパイシー', negative: 'マイルド' },
-  
-  // 温度・状態系
-  { id: 'label63', positive: '熱い', negative: '冷たい' },
-  { id: 'label65', positive: '乾燥してる', negative: '湿ってる' },
-  
+  // 擬音系（全テーマ共通）
+  { id: 'kira_doro', positive: 'キラキラ', negative: 'ドロドロ', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: '光沢感' },
+  { id: 'pika_boro', positive: 'ピカピカ', negative: 'ボロボロ', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: '新しさ・状態' },
+  { id: 'tsuya_kusu', positive: 'ツヤツヤ', negative: 'くすんでる', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: '艶' },
+  { id: 'shaki_gunya', positive: 'シャキシャキ', negative: 'ぐにゃぐにゃ', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: '歯ごたえ' },
+  { id: 'pari_shina', positive: 'パリパリ', negative: 'しなしな', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: 'パリッと感' },
+  { id: 'kori_neba', positive: 'コリコリ', negative: 'ネバネバ', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: 'コリコリ感' },
+  { id: 'saku_netto', positive: 'サクサク', negative: 'ねっとり', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: 'サクッと感' },
+  { id: 'kari_funya', positive: 'カリカリ', negative: 'ふにゃふにゃ', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: 'カリッと感' },
+
+  // 味覚系
+  { id: 'sweet_spicy', positive: '甘い', negative: '辛い', themes: ['food'], description: '甘辛' },
+  { id: 'sour_bitter', positive: '酸っぱい', negative: '苦い', themes: ['food'], description: '酸苦' },
+  { id: 'salty_light', positive: 'しょっぱい', negative: '薄味', themes: ['food'], description: '塩分' },
+  { id: 'rich_light', positive: 'こってり', negative: 'あっさり', themes: ['food'], description: '濃厚さ' },
+  { id: 'spicy_mild', positive: 'スパイシー', negative: 'マイルド', themes: ['food'], description: 'スパイス度' },
+
+  // 温度系
+  { id: 'hot_cold', positive: '熱い', negative: '冷たい', themes: ['food', 'place'], description: '温度' },
+
   // サイズ・形状系
-  { id: 'label67', positive: '大きい', negative: '小さい' },
-  { id: 'label68', positive: '長い', negative: '短い' },
-  { id: 'label69', positive: '太い', negative: '細い' },
-  { id: 'label70', positive: '厚い', negative: '薄い' },
-  { id: 'label71', positive: '重い', negative: '軽い' },
-  { id: 'label72', positive: '丸い', negative: '角ばってる' },
-  { id: 'label200', positive: '高い', negative: '低い' },
-  { id: 'label201', positive: '深い', negative: '浅い' },
-  { id: 'label202', positive: '広い', negative: '狭い' },
-  { id: 'label203', positive: '多い', negative: '少ない' },
-  
-  // 速度・動き系
-  { id: 'label73', positive: '速い', negative: '遅い' },
-  { id: 'label74', positive: '激しい', negative: '穏やか' },
-  
-  // 音・視覚系
-  { id: 'label76', positive: 'うるさい', negative: '静か' },
-  { id: 'label77', positive: '明るい', negative: '暗い' },
-  { id: 'label78', positive: 'カラフル', negative: 'モノトーン' },
-  { id: 'label79', positive: '派手', negative: '地味' },
-  
-  // 感情・印象系
-  { id: 'label80', positive: '楽しい', negative: '退屈' },
-  { id: 'label81', positive: 'ワクワク', negative: 'ドキドキ' },
-  { id: 'label82', positive: 'ほっこり', negative: 'スリリング' },
-  { id: 'label83', positive: '懐かしい', negative: '最先端' },
-  { id: 'label84', positive: 'エモい', negative: 'エモくない' },
-  { id: 'label85', positive: 'インスタ映え', negative: 'インスタ映えしない' },
-  { id: 'label210', positive: '優しい', negative: '厳しい' },
-  { id: 'label211', positive: '真面目', negative: 'ふざけている' },
-  { id: 'label212', positive: 'ロマンチック', negative: '現実的' },
-  { id: 'label213', positive: '素朴', negative: '洗練されている' },
-  { id: 'label214', positive: '上品', negative: '下品' },
-  { id: 'label215', positive: 'おしゃれ', negative: 'ださい' },
-  { id: 'label216', positive: 'エレガント', negative: 'カジュアル' },
-  { id: 'label217', positive: 'クール', negative: 'ホット' },
-  { id: 'label218', positive: '清潔', negative: '不潔' },
-  { id: 'label219', positive: '清楚', negative: '妖艶' },
-  
-  // 音象徴系（ブーバ・キキ効果）
-  { id: 'label87', positive: 'まるっこい音', negative: 'とがった音' },
-  { id: 'label88', positive: 'やわらかい名前', negative: 'かたい名前' },
-  { id: 'label95', positive: '濁音が多め', negative: '清音が多め' },
-  
-  // 香り・匂い系
-  { id: 'label90', positive: 'いい匂い', negative: '臭い' },
-  { id: 'label92', positive: '天然の香り', negative: '人工的な香り' },
-    
-  // 使用頻度・場面系
-  { id: 'label98', positive: '毎日使う', negative: 'たまに使う' },
-  { id: 'label99', positive: '朝に使う', negative: '夜に使う' },
-  { id: 'label100', positive: '室内で使う', negative: '屋外で使う' },
-  { id: 'label101', positive: '一人で使う', negative: 'みんなで使う' },
-  { id: 'label102', positive: '仕事で使う', negative: '家庭で使う' },
-  { id: 'label129', positive: 'プライベートで使う', negative: 'ビジネスで使う' },
-  { id: 'label130', positive: '学校で使う', negative: 'オフィスで使う' },
-  { id: 'label131', positive: '休日に使う', negative: '平日に使う' },
-  { id: 'label132', positive: '緊急時に使う', negative: '日常的に使う' },
-  { id: 'label133', positive: 'フォーマルな場で使う', negative: 'カジュアルな場で使う' },
-  { id: 'label134', positive: '子供が使う', negative: '大人が使う' },
-  { id: 'label135', positive: '初心者向け', negative: 'プロ向け' },
-  { id: 'label139', positive: '共有する', negative: '専有する' },
-  { id: 'label140', positive: 'レクリエーション用', negative: '実用的' },
-  
-  // 製造・素材系
-  { id: 'label103', positive: '天然素材', negative: '合成素材' },
-      
-  // 清潔・メンテナンス系
-  { id: 'label121', positive: '洗いやすい', negative: '洗いにくい' },
-  { id: 'label122', positive: 'メンテナンス簡単', negative: 'メンテナンス大変' },
-  { id: 'label123', positive: '汚れやすい', negative: '汚れにくい' },
-  
-  // 所有・入手系
-  { id: 'label125', positive: 'レア', negative: 'コモン' },
-  { id: 'label126', positive: '免許が必要', negative: '免許不要' },
-  { id: 'label127', positive: '手に入れやすい', negative: '手に入れにくい' },
+  { id: 'big_small', positive: '大きい', negative: '小さい', themes: ['food', 'daily', 'animal', 'place', 'vehicle'], description: '大小' },
+  { id: 'long_short', positive: '長い', negative: '短い', themes: ['daily', 'animal', 'vehicle'], description: '長さ' },
+  { id: 'thick_thin', positive: '太い', negative: '細い', themes: ['daily', 'animal', 'vehicle'], description: '太さ' },
+  { id: 'thick2_thin2', positive: '厚い', negative: '薄い', themes: ['food', 'daily'], description: '厚み' },
+  { id: 'heavy_light', positive: '重い', negative: '軽い', themes: ['daily', 'animal', 'vehicle'], description: '重さ' },
+  { id: 'round_square', positive: '丸い', negative: '角ばってる', themes: ['daily'], description: '形状' },
+  { id: 'high_low', positive: '高い', negative: '低い', themes: ['daily', 'place', 'vehicle'], description: '高さ' },
+  { id: 'deep_shallow', positive: '深い', negative: '浅い', themes: ['daily', 'place'], description: '深さ' },
+  { id: 'wide_narrow', positive: '広い', negative: '狭い', themes: ['daily', 'place', 'vehicle'], description: '広さ' },
+  { id: 'many_few', positive: '多い', negative: '少ない', themes: ['daily'], description: '数量' },
 
-  // 追加形容詞系
-  { id: 'label230', positive: '強い', negative: '弱い' },
-  { id: 'label231', positive: '美しい', negative: '醜い' },
-  { id: 'label233', positive: '賢い', negative: '愚か' },
-  { id: 'label234', positive: '勇敢', negative: '臆病' },
-  { id: 'label235', positive: 'アクティブ', negative: 'パッシブ' },
-  { id: 'label236', positive: 'ポジティブ', negative: 'ネガティブ' },
-  { id: 'label237', positive: '明確', negative: '曖昧' },
-  { id: 'label238', positive: '濃い', negative: '薄い' },
-  { id: 'label239', positive: '鋭い', negative: '鈍い' },
-  { id: 'label240', positive: '滑らか', negative: '粗い' },
-  { id: 'label242', positive: '柔軟', negative: '硬直' },
-  { id: 'label243', positive: '豪華', negative: '質素' },
-  { id: 'label244', positive: 'モダン', negative: 'レトロ' },
-  { id: 'label245', positive: 'オープン', negative: 'クローズド' },
-  { id: 'label247', positive: '活発', negative: '不活発' },
-  { id: 'label248', positive: '鮮やか', negative: 'くすんだ' },
-  { id: 'label249', positive: 'リッチ', negative: 'プア' },
-  { id: 'label250', positive: 'スムーズ', negative: 'ギクシャク' },
-  { id: 'label251', positive: '繊細', negative: '大雑把' },
-  { id: 'label253', positive: '安定', negative: '不安定' },
-  { id: 'label254', positive: '便利', negative: '不便' },
-  { id: 'label255', positive: '快適', negative: '不快' },
-  { id: 'label256', positive: '安全', negative: '危険' },
-  { id: 'label257', positive: '正確', negative: '不正確' },
-  { id: 'label258', positive: '効率的', negative: '非効率' },
-  { id: 'label259', positive: '独創的', negative: '平凡' },
+  // 速度・動き系
+  { id: 'fast_slow', positive: '速い', negative: '遅い', themes: ['entertainment', 'animal', 'vehicle'], description: '速度' },
+  { id: 'intense_calm', positive: '激しい', negative: '穏やか', themes: ['entertainment', 'animal', 'vehicle'], description: '激しさ' },
+
+  // 音・視覚系
+  { id: 'loud_quiet', positive: 'うるさい', negative: '静か', themes: ['entertainment', 'animal', 'place', 'vehicle'], description: '音量' },
+  { id: 'bright_dark', positive: '明るい', negative: '暗い', themes: ['daily', 'entertainment', 'animal', 'place', 'vehicle'], description: '明るさ' },
+  { id: 'colorful_mono', positive: 'カラフル', negative: 'モノトーン', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: '色彩' },
+  { id: 'flashy_plain', positive: '派手', negative: '地味', themes: ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], description: '派手さ' },
+
+  // 感情・印象系
+  { id: 'fun_boring', positive: '楽しい', negative: '退屈', themes: ['entertainment'], description: '楽しさ' },
+  { id: 'waku_doki', positive: 'ワクワク', negative: 'ドキドキ', themes: ['entertainment'], description: '興奮の種類' },
+  { id: 'hokko_thrill', positive: 'ほっこり', negative: 'スリリング', themes: ['entertainment'], description: '感情の方向' },
+  { id: 'nostalgic_cutting', positive: '懐かしい', negative: '最先端', themes: ['entertainment'], description: '新旧感' },
+  { id: 'emotional', positive: 'エモい', negative: 'エモくない', themes: [], description: 'エモさ' },
+  { id: 'instagrammable', positive: 'インスタ映え', negative: 'インスタ映えしない', themes: ['entertainment'], description: 'インスタ映え度' },
+  { id: 'gentle_strict', positive: '優しい', negative: '厳しい', themes: ['entertainment', 'animal'], description: '優しさ' },
+  { id: 'serious_playful', positive: '真面目', negative: 'ふざけている', themes: ['entertainment'], description: '真面目さ' },
+  { id: 'romantic_realistic', positive: 'ロマンチック', negative: '現実的', themes: ['entertainment'], description: 'ロマンチック度' },
+  { id: 'simple_sophisticated', positive: '素朴', negative: '洗練されている', themes: ['entertainment', 'place'], description: '洗練度' },
+  { id: 'elegant_vulgar', positive: '上品', negative: '下品', themes: ['entertainment'], description: '品格' },
+  { id: 'stylish_lame', positive: 'おしゃれ', negative: 'ださい', themes: ['entertainment'], description: 'おしゃれ度' },
+  { id: 'elegant_casual', positive: 'エレガント', negative: 'カジュアル', themes: [], description: 'フォーマル度' },
+  { id: 'cool_hot', positive: 'クール', negative: 'ホット', themes: [], description: 'クール度' },
+  { id: 'clean_dirty', positive: '清潔', negative: '不潔', themes: ['place'], description: '清潔感' },
+  { id: 'pure_sexy', positive: '清楚', negative: '妖艶', themes: [], description: '清楚さ' },
+
+  // 音の印象系
+  { id: 'round_sound', positive: 'まるっこい音', negative: 'とがった音', themes: [], description: '音の印象' },
+  { id: 'soft_name', positive: 'やわらかい名前', negative: 'かたい名前', themes: [], description: '名前の印象' },
+  { id: 'voiced_voiceless', positive: '濁音が多め', negative: '清音が多め', themes: [], description: '濁音の多さ' },
+
+  // 匂い系
+  { id: 'good_bad_smell', positive: 'いい匂い', negative: '臭い', themes: [], description: '匂いの良さ' },
+  { id: 'natural_artificial', positive: '天然の香り', negative: '人工的な香り', themes: [], description: '香りの自然さ' },
+
+  // 使用頻度・場面系
+  { id: 'daily_occasional', positive: '毎日使う', negative: 'たまに使う', themes: ['daily'], description: '使用頻度' },
+  { id: 'morning_night', positive: '朝に使う', negative: '夜に使う', themes: [], description: '使用時間帯' },
+  { id: 'indoor_outdoor', positive: '室内で使う', negative: '屋外で使う', themes: ['daily'], description: '使用場所' },
+  { id: 'solo_group', positive: '一人で使う', negative: 'みんなで使う', themes: ['daily'], description: '使用人数' },
+  { id: 'work_home', positive: '仕事で使う', negative: '家庭で使う', themes: [], description: '使用シーン' },
+  { id: 'private_business', positive: 'プライベートで使う', negative: 'ビジネスで使う', themes: [], description: '使用目的' },
+  { id: 'school_office', positive: '学校で使う', negative: 'オフィスで使う', themes: [], description: '使用場所' },
+  { id: 'holiday_weekday', positive: '休日に使う', negative: '平日に使う', themes: [], description: '使用曜日' },
+  { id: 'emergency_daily', positive: '緊急時に使う', negative: '日常的に使う', themes: [], description: '使用頻度' },
+  { id: 'formal_casual', positive: 'フォーマルな場で使う', negative: 'カジュアルな場で使う', themes: ['daily'], description: 'フォーマル度' },
+  { id: 'child_adult', positive: '子供が使う', negative: '大人が使う', themes: [], description: '年齢層' },
+  { id: 'beginner_pro', positive: '初心者向け', negative: 'プロ向け', themes: ['daily'], description: 'スキルレベル' },
+  { id: 'share_own', positive: '共有する', negative: '専有する', themes: [], description: '所有形態' },
+  { id: 'recreation_practical', positive: 'レクリエーション用', negative: '実用的', themes: [], description: '用途' },
+
+  // 素材系
+  { id: 'natural_synthetic', positive: '天然素材', negative: '合成素材', themes: ['daily'], description: '素材の自然さ' },
+
+  // メンテナンス系
+  { id: 'easy_wash', positive: '洗いやすい', negative: '洗いにくい', themes: ['daily'], description: '洗いやすさ' },
+  { id: 'easy_maintenance', positive: 'メンテナンス簡単', negative: 'メンテナンス大変', themes: ['daily'], description: 'メンテナンス性' },
+  { id: 'easy_dirty', positive: '汚れやすい', negative: '汚れにくい', themes: ['daily'], description: '汚れやすさ' },
+
+  // レア度系
+  { id: 'rare_common', positive: 'レア', negative: 'コモン', themes: [], description: 'レア度' },
+  { id: 'license_required', positive: '免許が必要', negative: '免許不要', themes: [], description: '免許の必要性' },
+  { id: 'easy_get', positive: '手に入れやすい', negative: '手に入れにくい', themes: [], description: '入手しやすさ' },
+
+  // 汎用形容詞系
+  { id: 'strong_weak', positive: '強い', negative: '弱い', themes: ['food', 'daily', 'entertainment', 'animal', 'vehicle'], description: '強さ' },
+  { id: 'beautiful_ugly', positive: '美しい', negative: '醜い', themes: ['food', 'entertainment', 'place', 'vehicle'], description: '美しさ' },
+  { id: 'smart_stupid', positive: '賢い', negative: '愚か', themes: ['animal'], description: '賢さ' },
+  { id: 'brave_coward', positive: '勇敢', negative: '臆病', themes: ['entertainment', 'animal'], description: '勇敢さ' },
+  { id: 'active_passive', positive: 'アクティブ', negative: 'パッシブ', themes: ['animal'], description: '活動性' },
+  { id: 'positive_negative', positive: 'ポジティブ', negative: 'ネガティブ', themes: ['entertainment'], description: 'ポジティブ度' },
+  { id: 'clear_ambiguous', positive: '明確', negative: '曖昧', themes: [], description: '明確さ' },
+  { id: 'thick_light', positive: '濃い', negative: '薄い', themes: [], description: '濃さ' },
+  { id: 'sharp_dull', positive: '鋭い', negative: '鈍い', themes: [], description: '鋭さ' },
+  { id: 'smooth_coarse', positive: '滑らか', negative: '粗い', themes: [], description: '滑らかさ' },
+  { id: 'flexible_rigid', positive: '柔軟', negative: '硬直', themes: [], description: '柔軟性' },
+  { id: 'luxury_simple', positive: '豪華', negative: '質素', themes: ['daily', 'place', 'vehicle'], description: '豪華さ' },
+  { id: 'modern_retro', positive: 'モダン', negative: 'レトロ', themes: ['entertainment', 'place', 'vehicle'], description: 'モダンさ' },
+  { id: 'open_closed', positive: 'オープン', negative: 'クローズド', themes: [], description: 'オープン度' },
+  { id: 'lively_inactive', positive: '活発', negative: '不活発', themes: [], description: '活発さ' },
+  { id: 'vivid_dull', positive: '鮮やか', negative: 'くすんだ', themes: ['food'], description: '鮮やかさ' },
+  { id: 'rich_poor', positive: 'リッチ', negative: 'プア', themes: [], description: 'リッチ度' },
+  { id: 'smooth_jerky', positive: 'スムーズ', negative: 'ギクシャク', themes: [], description: 'スムーズさ' },
+  { id: 'delicate_rough', positive: '繊細', negative: '大雑把', themes: [], description: '繊細さ' },
+  { id: 'stable_unstable', positive: '安定', negative: '不安定', themes: [], description: '安定性' },
+  { id: 'convenient_inconvenient', positive: '便利', negative: '不便', themes: ['daily', 'vehicle'], description: '便利さ' },
+  { id: 'comfortable_uncomfortable', positive: '快適', negative: '不快', themes: ['food', 'daily', 'place', 'vehicle'], description: '快適さ' },
+  { id: 'safe_dangerous', positive: '安全', negative: '危険', themes: ['daily', 'animal', 'place', 'vehicle'], description: '安全性' },
+  { id: 'accurate_inaccurate', positive: '正確', negative: '不正確', themes: [], description: '正確さ' },
+  { id: 'efficient_inefficient', positive: '効率的', negative: '非効率', themes: ['vehicle'], description: '効率性' },
+  { id: 'creative_ordinary', positive: '独創的', negative: '平凡', themes: ['entertainment', 'vehicle'], description: '独創性' },
 ];
 
-// すべての軸ラベルを返す関数
+// difficulty別にラベルを取得する関数（互換性のため残す）
 export function getAxisLabelsByDifficulty(): AxisLabel[] {
   return axisLabels;
 }

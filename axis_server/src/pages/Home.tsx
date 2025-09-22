@@ -53,7 +53,7 @@ export default function Home() {
       alert('パスコードを入力してください');
       return;
     }
-    if (isOnlineMode && selectedThemes.length === 0) {
+    if (selectedThemes.length === 0) {
       alert('少なくとも1つのテーマを選択してください');
       return;
     }
@@ -197,14 +197,23 @@ export default function Home() {
                 </div>
               </div>
 
-              {isOnlineMode && (
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    テーマ選択（複数選択可）
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border-2 border-gray-200 rounded-lg p-3">
-                    {themes.filter(t => t.id !== 'mixed' && t.id !== 'random').map(theme => (
-                      <label key={theme.id} className="flex items-start space-x-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-3">
+                  テーマ選択（複数選択可）
+                </label>
+                <div className="grid grid-cols-2 gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
+                  {themes.filter(t => t.id !== 'mixed' && t.id !== 'random').map(theme => (
+                    <label
+                      key={theme.id}
+                      className={`
+                        relative flex items-start space-x-3 p-3 rounded-lg cursor-pointer transition-all
+                        ${selectedThemes.includes(theme.id)
+                          ? 'bg-white shadow-md border-2 border-purple-400 transform scale-[1.02]'
+                          : 'bg-white/80 border-2 border-gray-200 hover:bg-white hover:border-purple-300 hover:shadow-sm'
+                        }
+                      `}
+                    >
+                      <div className="flex items-center h-5">
                         <input
                           type="checkbox"
                           checked={selectedThemes.includes(theme.id)}
@@ -215,20 +224,45 @@ export default function Home() {
                               setSelectedThemes(selectedThemes.filter(t => t !== theme.id));
                             }
                           }}
-                          className="mt-1 h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                          className={`
+                            h-5 w-5 rounded border-2 transition-all
+                            ${selectedThemes.includes(theme.id)
+                              ? 'text-purple-600 border-purple-600 focus:ring-purple-500'
+                              : 'text-purple-400 border-gray-300 focus:ring-purple-400'
+                            }
+                          `}
                         />
-                        <div className="flex-1">
-                          <div className="font-medium text-gray-900">{theme.name}</div>
-                          <div className="text-xs text-gray-500">{theme.description}</div>
+                      </div>
+                      <div className="flex-1">
+                        <div className={`font-bold ${selectedThemes.includes(theme.id) ? 'text-purple-700' : 'text-gray-700'}`}>
+                          {theme.name}
                         </div>
-                      </label>
-                    ))}
-                  </div>
-                  {selectedThemes.length === 0 && (
-                    <p className="text-red-500 text-sm mt-1">少なくとも1つのテーマを選択してください</p>
-                  )}
+                        <div className="text-xs text-gray-500 mt-0.5">{theme.description}</div>
+                      </div>
+                      {selectedThemes.includes(theme.id) && (
+                        <div className="absolute top-1 right-1">
+                          <span className="text-purple-600 text-lg">✓</span>
+                        </div>
+                      )}
+                    </label>
+                  ))}
                 </div>
-              )}
+                {selectedThemes.length === 0 && (
+                  <p className="text-red-500 text-sm mt-2 font-medium">
+                    ⚠️ 少なくとも1つのテーマを選択してください
+                  </p>
+                )}
+                {selectedThemes.length > 0 && (
+                  <p className="text-purple-600 text-sm mt-2">
+                    選択中: {selectedThemes.length}個のテーマ
+                  </p>
+                )}
+                {!isOnlineMode && (
+                  <p className="text-amber-600 text-xs mt-2 bg-amber-50 p-2 rounded">
+                    💡 通常プレイでは軸のみがテーマに応じて調整されます（カードは手持ちのものを使用）
+                  </p>
+                )}
+              </div>
 
               <button
                 onClick={createRoom}
@@ -246,7 +280,7 @@ export default function Home() {
                 <div className="text-2xl font-bold font-mono">{keyword}</div>
                 <div className="text-sm text-gray-600 mt-2">
                   プレイヤー人数: {playerCount}人 | {isOnlineMode ? 'オンラインプレイ' : '通常プレイ'}
-                  {isOnlineMode && selectedThemes.length > 0 && (
+                  {selectedThemes.length > 0 && (
                     <div className="mt-1">
                       選択テーマ: {selectedThemes.map(id => themes.find(t => t.id === id)?.name).filter(Boolean).join('、')}
                     </div>

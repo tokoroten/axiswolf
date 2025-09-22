@@ -345,7 +345,7 @@ export default function Game() {
               <span className="text-gray-600">ラウンド: </span>
               <span className="font-bold text-lg">{currentRound + 1}</span>
             </div>
-            {isOnlineMode && currentThemeName && (
+            {currentThemeName && (
               <div>
                 <span className="text-gray-600">テーマ: </span>
                 <span className="font-bold text-lg text-purple-600">{currentThemeName}</span>

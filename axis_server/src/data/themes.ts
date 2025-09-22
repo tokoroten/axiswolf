@@ -28,13 +28,13 @@ export const themes: Theme[] = [
       // 健康系
       'label17',
       // 価格系
-      'label10', 'label11', 'label12',
+      'label10', 'label12',
       // サイズ系
       'label67', 'label70',
       // 見た目系
       'label78', 'label79',
       // 共通形容詞
-      'label231', 'label232', 'label248', 'label255'
+      'label231', 'label248', 'label255'
     ]
   },
   {
@@ -51,7 +51,7 @@ export const themes: Theme[] = [
       // 擬音系（全テーマ共通）
       'label49', 'label50', 'label51', 'label52', 'label53', 'label54', 'label55', 'label56',
       // 素材系
-      'label103', 'label107',
+      'label103',
       // 使用頻度系
       'label98', 'label100', 'label101', 'label133', 'label135',
       // 清潔系
@@ -90,7 +90,7 @@ export const themes: Theme[] = [
       // 音・視覚系
       'label76', 'label77', 'label78', 'label79',
       // 共通形容詞
-      'label34', 'label234', 'label236', 'label244', 'label259'
+      'label234', 'label236', 'label244', 'label259'
     ]
   },
   {
@@ -140,7 +140,7 @@ export const themes: Theme[] = [
       // 時間系
       'label30', 'label31',
       // 共通形容詞
-      'label34', 'label213', 'label218', 'label231', 'label243', 'label244', 'label255', 'label256'
+      'label213', 'label218', 'label231', 'label243', 'label244', 'label255', 'label256'
     ]
   },
   {
@@ -152,7 +152,7 @@ export const themes: Theme[] = [
       // サイズ系
       'label67', 'label68', 'label69', 'label71', 'label200', 'label202',
       // 速度系
-      'label73', 'label74', 'label75',
+      'label73', 'label74',
       // 見た目系
       'label20', 'label21', 'label22', 'label23', 'label78', 'label79',
       // 擬音系（全テーマ共通）
@@ -160,11 +160,11 @@ export const themes: Theme[] = [
       // 音系
       'label76',
       // 価格系
-      'label10', 'label11', 'label12',
+      'label10', 'label12',
       // 環境系
       'label19',
       // 共通形容詞
-      'label34', 'label230', 'label231', 'label243', 'label244', 'label254', 'label255', 'label256', 'label258', 'label259'
+      'label230', 'label231', 'label243', 'label244', 'label254', 'label255', 'label256', 'label258', 'label259'
     ]
   },
   {

@@ -78,7 +78,9 @@ export default function Game() {
 
     // 現在のラウンドのテーマを選択（複数テーマから1つ選択）
     const currentTheme = (() => {
-      if (selectedThemes.length === 0) return undefined;
+      if (selectedThemes.length === 0) {
+        return undefined;
+      }
       const themeIndex = roundSeed % selectedThemes.length;
       const themeId = selectedThemes[themeIndex];
       return getThemeById(themeId as ThemeType);

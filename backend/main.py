@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+import random
+from axis_data import generate_axis_pair, generate_wolf_axis_pair
 
 app = FastAPI()
 
@@ -14,6 +16,40 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# カードプール
+CARD_POOL = [
+    # 食べ物
+    'りんご', 'バナナ', 'ぶどう', 'いちご', 'みかん', 'メロン', 'スイカ', 'もも',
+    'ラーメン', 'カレー', 'ハンバーグ', 'ピザ', 'すし', 'うどん', 'そば', 'おにぎり',
+    'ケーキ', 'チョコレート', 'アイス', 'プリン', 'ドーナツ', 'クッキー',
+
+    # 動物
+    'いぬ', 'ねこ', 'うさぎ', 'ぞう', 'ライオン', 'きりん', 'パンダ', 'コアラ',
+    'ペンギン', 'いるか', 'くじら', 'さめ', 'きんぎょ', 'かめ',
+
+    # 乗り物
+    '自動車', '電車', 'バス', '飛行機', 'ヘリコプター', '自転車', 'バイク', '船',
+
+    # 日用品
+    'スマホ', 'パソコン', 'テレビ', '冷蔵庫', 'エアコン', '時計', 'カメラ', '傘',
+    'ペン', 'ノート', 'はさみ', 'のり', 'テープ', 'ホチキス',
+
+    # エンターテイメント
+    '映画', 'アニメ', 'ゲーム', '音楽', 'スポーツ', 'サッカー', '野球', 'バスケ',
+    '本', '漫画', '雑誌', 'ドラマ',
+]
+
+def generate_hand(player_slot: int, round_seed: str, hand_size: int = 5) -> List[str]:
+    """
+    シード値を使って決定的に手札を生成
+    """
+    seed = int(round_seed) + player_slot * 1000
+    rng = random.Random(seed)
+
+    # ランダムにカードを選択
+    hand = rng.sample(CARD_POOL, min(hand_size, len(CARD_POOL)))
+    return hand
 
 # オンメモリストレージ
 rooms: Dict[str, dict] = {}
@@ -62,6 +98,7 @@ class UpdatePhaseRequest(BaseModel):
     axis_payload: Optional[dict] = None
     wolf_axis_payload: Optional[dict] = None
     round_seed: Optional[str] = None
+    themes: Optional[List[str]] = None  # 軸生成用のテーマ
 
 class PlaceCardRequest(BaseModel):
     card_id: str
@@ -172,14 +209,29 @@ async def update_phase(room_code: str, req: UpdatePhaseRequest):
     rooms[room_code]["phase"] = req.phase
     rooms[room_code]["updated_at"] = datetime.now().isoformat()
 
-    if req.axis_payload:
-        rooms[room_code]["axis_payload"] = req.axis_payload
+    # 軸データが提供されていない場合は自動生成
+    if req.phase == 'placement' and not req.axis_payload:
+        # デフォルトテーマを使用
+        themes = req.themes if req.themes else ['food', 'daily', 'entertainment']
+        seed = int(req.round_seed) if req.round_seed else random.randint(0, 10000)
 
-    if req.wolf_axis_payload:
-        rooms[room_code]["wolf_axis_payload"] = req.wolf_axis_payload
+        # 通常の軸と人狼用の軸を生成
+        normal_axis = generate_axis_pair(themes, seed)
+        wolf_axis = generate_wolf_axis_pair(normal_axis, themes, seed)
 
-    if req.round_seed:
-        rooms[room_code]["round_seed"] = req.round_seed
+        rooms[room_code]["axis_payload"] = normal_axis
+        rooms[room_code]["wolf_axis_payload"] = wolf_axis
+        rooms[room_code]["round_seed"] = str(seed)
+    else:
+        # 手動で提供された軸データを使用
+        if req.axis_payload:
+            rooms[room_code]["axis_payload"] = req.axis_payload
+
+        if req.wolf_axis_payload:
+            rooms[room_code]["wolf_axis_payload"] = req.wolf_axis_payload
+
+        if req.round_seed:
+            rooms[room_code]["round_seed"] = req.round_seed
 
     await manager.broadcast(room_code, {
         "type": "phase_changed",
@@ -229,6 +281,31 @@ async def place_card(room_code: str, player_id: str, req: PlaceCardRequest):
     })
 
     return {"success": True}
+
+# 手札取得
+@app.get("/api/rooms/{room_code}/hand")
+async def get_hand(room_code: str, player_id: str):
+    if room_code not in rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    # プレイヤー情報取得
+    room_players = players.get(room_code, [])
+    player = next((p for p in room_players if p["player_id"] == player_id), None)
+
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    room = rooms[room_code]
+    if not room["round_seed"]:
+        raise HTTPException(status_code=400, detail="Game not started")
+
+    # 手札を生成
+    hand = generate_hand(player["player_slot"], room["round_seed"], 5)
+
+    return {
+        "hand": hand,
+        "player_slot": player["player_slot"]
+    }
 
 # 投票
 @app.post("/api/rooms/{room_code}/vote")

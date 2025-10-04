@@ -16,6 +16,7 @@ interface GameContextType {
   placeCard: (cardId: string, quadrant: number, offsets: { x: number; y: number }) => Promise<void>;
   submitVote: (targetSlot: number) => Promise<void>;
   fetchVotes: () => Promise<void>;
+  fetchHand: () => Promise<string[]>;
 }
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -123,6 +124,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setVotes(newVotes);
   };
 
+  const fetchHand = async (): Promise<string[]> => {
+    if (!room || !playerId) return [];
+    const { hand } = await api.getHand(room.room_code, playerId);
+    return hand;
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -138,6 +145,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         placeCard,
         submitVote,
         fetchVotes,
+        fetchHand,
       }}
     >
       {children}

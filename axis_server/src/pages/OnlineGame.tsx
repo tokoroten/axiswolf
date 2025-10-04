@@ -1,14 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
-import { generateAxisPair, generateWolfAxisPair } from '../utils/axisGenerator';
-import { generateHand } from '../utils/cardGenerator';
 import { getPlayerColorStyle } from '../utils/playerColors';
 
 export default function OnlineGame() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
-  const { room, players, placedCards, votes, isHost, playerSlot, updatePhase, placeCard, submitVote, fetchVotes } = useGame();
+  const { room, players, placedCards, votes, isHost, playerSlot, updatePhase, placeCard, submitVote, fetchVotes, fetchHand } = useGame();
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [myAxis, setMyAxis] = useState<any>(null);
   const [myHand, setMyHand] = useState<string[]>([]);
@@ -57,15 +55,18 @@ export default function OnlineGame() {
         setMyAxis(axisData);
       }
 
-      // 手札を生成（ラウンドシードが変わったら再生成）
+      // 手札を取得（ラウンドシードが変わったら再取得）
       if (playerSlot !== null && room.round_seed && room.round_seed !== lastRoundSeedRef.current) {
-        console.log('[OnlineGame] Generating hand for player', playerSlot, 'with seed', room.round_seed);
-        const hand = generateHand(playerSlot, room.round_seed, 5);
-        console.log('[OnlineGame] Generated hand:', hand);
-        setMyHand(hand);
-        lastRoundSeedRef.current = room.round_seed;
+        console.log('[OnlineGame] Fetching hand for player', playerSlot, 'with seed', room.round_seed);
+        fetchHand().then(hand => {
+          console.log('[OnlineGame] Fetched hand:', hand);
+          setMyHand(hand);
+          lastRoundSeedRef.current = room.round_seed;
+        }).catch(error => {
+          console.error('[OnlineGame] Failed to fetch hand:', error);
+        });
       } else {
-        console.log('[OnlineGame] Skipping hand generation:', {
+        console.log('[OnlineGame] Skipping hand fetch:', {
           playerSlot,
           hasRoundSeed: !!room.round_seed,
           roundSeed: room.round_seed,
@@ -74,31 +75,15 @@ export default function OnlineGame() {
         });
       }
     }
-  }, [room, playerSlot, players.length]);
+  }, [room, playerSlot, players.length, fetchHand]);
 
 
   const handleStartGame = async () => {
     if (!isHost || !roomCode) return;
 
     try {
-      // 軸データを生成（デフォルトテーマ）
-      const themes = ['food', 'daily', 'entertainment'];
-      const seed = Math.floor(Math.random() * 10000);
-
-      const normalAxis = generateAxisPair(themes as any, seed);
-      const wolfAxis = generateWolfAxisPair(normalAxis, themes as any, seed);
-
-      const axisPayload = {
-        horizontal: normalAxis.horizontal,
-        vertical: normalAxis.vertical,
-      };
-
-      const wolfAxisPayload = {
-        horizontal: wolfAxis.horizontal,
-        vertical: wolfAxis.vertical,
-      };
-
-      await updatePhase('placement', axisPayload, wolfAxisPayload, seed.toString());
+      // サーバー側で軸を生成するため、引数なしでphaseのみ変更
+      await updatePhase('placement');
     } catch (error) {
       console.error('Failed to start game:', error);
       alert('ゲーム開始に失敗しました');

@@ -129,6 +129,12 @@ export const api = {
     return res.json();
   },
 
+  async getHand(roomCode: string, playerId: string): Promise<{ hand: string[]; player_slot: number }> {
+    const res = await fetch(`${API_BASE}/rooms/${roomCode}/hand?player_id=${playerId}`);
+    if (!res.ok) throw new Error('Failed to get hand');
+    return res.json();
+  },
+
   connectWebSocket(roomCode: string): WebSocket {
     return new WebSocket(`${WS_BASE}/${roomCode}`);
   },

@@ -6,7 +6,8 @@
       "Bash(curl http://localhost:8000/docs)",
       "Bash(curl:*)",
       "Bash(git commit:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

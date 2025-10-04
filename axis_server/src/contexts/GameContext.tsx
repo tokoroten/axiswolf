@@ -99,13 +99,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const updatePhase = async (phase: string, axisPayload?: any, wolfAxisPayload?: any, roundSeed?: string) => {
     if (!room) return;
     await api.updatePhase(room.room_code, phase, axisPayload, wolfAxisPayload, roundSeed);
-    setRoom(prev => prev ? {
-      ...prev,
-      phase,
-      axis_payload: axisPayload || prev.axis_payload,
-      wolf_axis_payload: wolfAxisPayload || prev.wolf_axis_payload,
-      round_seed: roundSeed || prev.round_seed
-    } : null);
+    // サーバーから最新のルーム情報を取得（サーバー側で軸が生成される可能性があるため）
+    const { room: updatedRoom } = await api.getRoom(room.room_code);
+    setRoom(updatedRoom);
   };
 
   const placeCard = async (cardId: string, quadrant: number, offsets: { x: number; y: number }) => {

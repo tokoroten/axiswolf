@@ -111,9 +111,19 @@ export default function Home() {
         <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
           アクシスウルフ
         </h1>
-        <p className="text-center text-gray-600 mb-6">
+        <p className="text-center text-gray-600 mb-2">
           軸がズレた人狼を見つけ出せ！
         </p>
+
+        <div className="text-center mb-6">
+          <button
+            onClick={() => navigate('/online')}
+            className="bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-3 px-8 rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg text-lg"
+          >
+            🌐 オンライン対戦モード
+          </button>
+          <p className="text-xs text-gray-500 mt-2">完全オンライン対戦（Supabase使用）</p>
+        </div>
 
         {!roomCreated ? (
           <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md mx-auto">
@@ -191,8 +201,8 @@ export default function Home() {
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    <div className="font-bold">オンラインプレイ</div>
-                    <div className="text-xs mt-1">デジタルカードを使用</div>
+                    <div className="font-bold">デジタルカード</div>
+                    <div className="text-xs mt-1">QRコードで配布</div>
                   </button>
                 </div>
               </div>

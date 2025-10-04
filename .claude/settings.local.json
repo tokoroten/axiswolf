@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(curl -X POST http://localhost:8000/api/rooms/create -H \"Content-Type: application/json\" -d \"{\"\"room_code\"\":\"\"TEST1234\"\",\"\"player_id\"\":\"\"test_player_1\"\",\"\"player_name\"\":\"\"テストプレイヤー1\"\"}\")",
+      "Bash(curl http://localhost:8000/docs)",
+      "Bash(curl:*)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

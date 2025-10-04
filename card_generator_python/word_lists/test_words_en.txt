@@ -1,3 +1,0 @@
-     1→apple
-     2→sword
-     3→diamond

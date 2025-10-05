@@ -347,6 +347,132 @@ async def get_votes(room_code: str):
     room_votes = votes.get(room_code, [])
     return {"votes": room_votes}
 
+# 投票結果を計算してスコアを更新
+@app.post("/api/rooms/{room_code}/calculate_results")
+async def calculate_results(room_code: str):
+    if room_code not in rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    room = rooms[room_code]
+    room_players = players.get(room_code, [])
+    room_votes = votes.get(room_code, [])
+
+    # 人狼を特定
+    if not room["round_seed"]:
+        raise HTTPException(status_code=400, detail="Game not started")
+
+    wolf_slot = int(room["round_seed"]) % len(room_players)
+
+    # 投票集計
+    vote_counts: Dict[int, int] = {}
+    for vote in room_votes:
+        target = vote["target_slot"]
+        vote_counts[target] = vote_counts.get(target, 0) + 1
+
+    # 最多得票数
+    max_votes = max(vote_counts.values()) if vote_counts else 0
+    # 最多得票者（複数の可能性）
+    top_voted = [slot for slot, count in vote_counts.items() if count == max_votes]
+
+    # 勝利判定
+    wolf_caught = wolf_slot in top_voted
+
+    # スコア計算
+    import json
+    current_scores = json.loads(room["scores"]) if room["scores"] else {}
+
+    for player in room_players:
+        slot = player["player_slot"]
+        slot_str = str(slot)
+
+        if slot_str not in current_scores:
+            current_scores[slot_str] = 0
+
+        # 人狼が捕まった場合
+        if wolf_caught:
+            if slot == wolf_slot:
+                # 人狼は減点
+                current_scores[slot_str] -= 2
+            else:
+                # 村人は加点
+                current_scores[slot_str] += 1
+        else:
+            # 人狼が逃げた場合
+            if slot == wolf_slot:
+                # 人狼は加点
+                current_scores[slot_str] += 3
+            else:
+                # 村人は減点
+                current_scores[slot_str] -= 1
+
+    # スコアを保存
+    room["scores"] = json.dumps(current_scores)
+    room["updated_at"] = datetime.now().isoformat()
+
+    # 全プレイヤーの手札を生成（結果表示用）
+    all_hands = {}
+    for player in room_players:
+        slot = player["player_slot"]
+        hand = generate_hand(slot, room["round_seed"])
+        all_hands[str(slot)] = hand
+
+    return {
+        "wolf_slot": wolf_slot,
+        "top_voted": top_voted,
+        "wolf_caught": wolf_caught,
+        "scores": current_scores,
+        "vote_counts": vote_counts,
+        "all_hands": all_hands,
+        "wolf_axis": room["wolf_axis_payload"],
+        "normal_axis": room["axis_payload"]
+    }
+
+# 次ラウンドへ移行
+@app.post("/api/rooms/{room_code}/next_round")
+async def start_next_round(room_code: str):
+    if room_code not in rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    room = rooms[room_code]
+    room_players = players.get(room_code, [])
+
+    # 新しいラウンド番号
+    new_round = room["active_round"] + 1
+
+    # 新しいシード値を生成
+    new_seed = random.randint(0, 10000)
+
+    # 新しい軸を生成
+    themes = ['food', 'daily', 'entertainment']
+    normal_axis = generate_axis_pair(themes, new_seed)
+    wolf_axis = generate_wolf_axis_pair(normal_axis, themes, new_seed)
+
+    # ルームの状態を更新
+    room["active_round"] = new_round
+    room["phase"] = "placement"
+    room["round_seed"] = str(new_seed)
+    room["axis_payload"] = normal_axis
+    room["wolf_axis_payload"] = wolf_axis
+    room["updated_at"] = datetime.now().isoformat()
+
+    # 前ラウンドのカードと投票をクリア
+    if room_code in cards:
+        cards[room_code] = []
+    if room_code in votes:
+        votes[room_code] = []
+
+    # WebSocketで通知
+    await manager.broadcast(room_code, {
+        "type": "round_started",
+        "round": new_round
+    })
+
+    return {
+        "success": True,
+        "round": new_round,
+        "round_seed": str(new_seed)
+    }
+
 # デバッグ: ルーム一覧取得
 @app.get("/api/debug/rooms")
 async def get_all_rooms():

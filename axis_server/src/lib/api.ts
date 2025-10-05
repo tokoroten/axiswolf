@@ -135,6 +135,37 @@ export const api = {
     return res.json();
   },
 
+  async calculateResults(roomCode: string): Promise<{
+    wolf_slot: number;
+    top_voted: number[];
+    wolf_caught: boolean;
+    scores: Record<string, number>;
+    vote_counts: Record<number, number>;
+    all_hands: Record<string, string[]>;
+    wolf_axis: any;
+    normal_axis: any;
+  }> {
+    const res = await fetch(`${API_BASE}/rooms/${roomCode}/calculate_results`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Failed to calculate results');
+    return res.json();
+  },
+
+  async startNextRound(roomCode: string): Promise<{
+    success: boolean;
+    round: number;
+    round_seed: string;
+  }> {
+    const res = await fetch(`${API_BASE}/rooms/${roomCode}/next_round`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!res.ok) throw new Error('Failed to start next round');
+    return res.json();
+  },
+
   connectWebSocket(roomCode: string): WebSocket {
     return new WebSocket(`${WS_BASE}/${roomCode}`);
   },

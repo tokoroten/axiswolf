@@ -2,17 +2,29 @@ import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { getPlayerColorStyle } from '../utils/playerColors';
+import GameBoard from '../components/GameBoard';
 
 export default function OnlineGame() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
-  const { room, players, placedCards, votes, isHost, playerSlot, updatePhase, placeCard, submitVote, fetchVotes, fetchHand } = useGame();
+  const { room, players, placedCards, votes, isHost, playerSlot, updatePhase, placeCard, submitVote, fetchVotes, fetchHand, calculateResults, startNextRound } = useGame();
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [myAxis, setMyAxis] = useState<any>(null);
   const [myHand, setMyHand] = useState<string[]>([]);
   const [draggedCard, setDraggedCard] = useState<{ cardId: string; isPlaced: boolean } | null>(null);
   const [selectedVote, setSelectedVote] = useState<number | null>(null);
   const lastRoundSeedRef = useRef<string | null>(null);
+  const handFetchedRef = useRef<boolean>(false);
+  const [gameResults, setGameResults] = useState<{
+    wolf_slot: number;
+    top_voted: number[];
+    wolf_caught: boolean;
+    scores: Record<string, number>;
+    vote_counts: Record<number, number>;
+    all_hands: Record<string, string[]>;
+    wolf_axis: any;
+    normal_axis: any;
+  } | null>(null);
 
   useEffect(() => {
     if (!roomCode) {
@@ -36,15 +48,17 @@ export default function OnlineGame() {
       myHandLength: myHand.length
     });
 
-    if (room && room.axis_payload && room.phase !== 'lobby') {
+    if (room && room.axis_payload && room.round_seed && playerSlot !== null && players.length > 0) {
       // 軸データを取得
       const axisData = typeof room.axis_payload === 'string'
         ? JSON.parse(room.axis_payload)
         : room.axis_payload;
 
       // 自分が人狼かどうかを確認
-      const wolfSlot = (parseInt(room.round_seed || '0') % players.length);
+      const wolfSlot = (parseInt(room.round_seed) % players.length);
       const isWolf = playerSlot === wolfSlot;
+
+      console.log('[OnlineGame] Setting axis', { playerSlot, wolfSlot, isWolf });
 
       if (isWolf && room.wolf_axis_payload) {
         const wolfAxisData = typeof room.wolf_axis_payload === 'string'
@@ -55,13 +69,14 @@ export default function OnlineGame() {
         setMyAxis(axisData);
       }
 
-      // 手札を取得（ラウンドシードが変わったら再取得）
-      if (playerSlot !== null && room.round_seed && room.round_seed !== lastRoundSeedRef.current) {
+      // 手札を取得（ラウンドシードが変わったら、または初回取得）
+      if (room.round_seed !== lastRoundSeedRef.current) {
         console.log('[OnlineGame] Fetching hand for player', playerSlot, 'with seed', room.round_seed);
         fetchHand().then(hand => {
           console.log('[OnlineGame] Fetched hand:', hand);
           setMyHand(hand);
           lastRoundSeedRef.current = room.round_seed;
+          handFetchedRef.current = true;
         }).catch(error => {
           console.error('[OnlineGame] Failed to fetch hand:', error);
         });
@@ -71,12 +86,38 @@ export default function OnlineGame() {
           hasRoundSeed: !!room.round_seed,
           roundSeed: room.round_seed,
           lastRoundSeed: lastRoundSeedRef.current,
+          handFetched: handFetchedRef.current,
           same: room.round_seed === lastRoundSeedRef.current
         });
       }
     }
   }, [room, playerSlot, players.length, fetchHand]);
 
+  // resultsフェーズになったら結果を取得（非ホストプレイヤー用）
+  useEffect(() => {
+    if (room?.phase === 'results' && !gameResults) {
+      console.log('[OnlineGame] Fetching results for non-host player');
+      calculateResults()
+        .then(results => {
+          console.log('[OnlineGame] Received results:', results);
+          console.log('[OnlineGame] wolf_axis:', results.wolf_axis);
+          console.log('[OnlineGame] normal_axis:', results.normal_axis);
+          setGameResults({
+            wolf_slot: results.wolf_slot,
+            top_voted: results.top_voted,
+            wolf_caught: results.wolf_caught,
+            scores: results.scores,
+            vote_counts: results.vote_counts,
+            all_hands: results.all_hands,
+            wolf_axis: results.wolf_axis,
+            normal_axis: results.normal_axis,
+          });
+        })
+        .catch(error => {
+          console.error('[OnlineGame] Failed to fetch results:', error);
+        });
+    }
+  }, [room?.phase, gameResults, calculateResults]);
 
   const handleStartGame = async () => {
     if (!isHost || !roomCode) return;
@@ -216,11 +257,9 @@ export default function OnlineGame() {
           </div>
         )}
 
-        {(room.phase === 'placement' || room.phase === 'voting' || room.phase === 'results') && myHand.length > 0 && (
+        {room.phase === 'placement' && myHand.length > 0 && (
           <div className="bg-gray-800 p-4 rounded mb-4">
-            <h2 className="font-bold mb-2">
-              {room.phase === 'placement' ? '手札（ドラッグ&ドロップで配置）' : '手札'}
-            </h2>
+            <h2 className="font-bold mb-2">手札（ドラッグ&ドロップで配置）</h2>
             <div className="flex gap-2 flex-wrap">
               {myHand.map((card) => {
                 const isPlaced = placedCards.some(c => c.card_id === card && c.player_slot === playerSlot);
@@ -253,6 +292,36 @@ export default function OnlineGame() {
 
         {room.phase === 'placement' && (
           <>
+            {/* プレイヤー進行状況 */}
+            <div className="bg-gray-800 p-4 rounded mb-4">
+              <h3 className="font-bold mb-3">プレイヤー進行状況</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {players.map((player) => {
+                  const cardCount = placedCards.filter(c => c.player_slot === player.player_slot).length;
+                  return (
+                    <div key={player.player_slot} className="bg-gray-700 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div
+                          className="w-4 h-4 rounded-full border border-white"
+                          style={{ backgroundColor: getPlayerColorStyle(player.player_slot) }}
+                        ></div>
+                        <span className="font-medium text-sm truncate">{player.player_name}</span>
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        配置済み: {cardCount} / 5
+                      </div>
+                      <div className="mt-1 h-1.5 bg-gray-600 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-green-500 transition-all"
+                          style={{ width: `${(cardCount / 5) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {isHost && (
               <button
                 onClick={async () => {
@@ -264,97 +333,41 @@ export default function OnlineGame() {
               </button>
             )}
 
-            <div
-              onClick={handleBoardClick}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              className="relative w-full aspect-square bg-white rounded-xl cursor-crosshair shadow-xl"
-            >
-              {/* SVGで四象限の背景 */}
-              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                {/* 上の三角形 (A) */}
-                <path d="M 0 0 L 50 50 L 100 0 Z" fill="#fee2e2" fillOpacity="0.6" />
-                {/* 左の三角形 (C) */}
-                <path d="M 0 0 L 50 50 L 0 100 Z" fill="#dcfce7" fillOpacity="0.6" />
-                {/* 下の三角形 (B) */}
-                <path d="M 0 100 L 50 50 L 100 100 Z" fill="#dbeafe" fillOpacity="0.6" />
-                {/* 右の三角形 (D) */}
-                <path d="M 100 0 L 50 50 L 100 100 Z" fill="#fef3c7" fillOpacity="0.6" />
-                {/* 対角線 */}
-                <line x1="0" y1="0" x2="100" y2="100" stroke="#d1d5db" strokeWidth="0.1" strokeOpacity="0.3" />
-                <line x1="100" y1="0" x2="0" y2="100" stroke="#d1d5db" strokeWidth="0.1" strokeOpacity="0.3" />
-              </svg>
-
-              {/* 縦軸と横軸の線 */}
-              <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-400"></div>
-              <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-400"></div>
-
-              {/* エリアラベル */}
-              <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl font-bold text-red-500 opacity-50 z-10 pointer-events-none">A</div>
-              <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 translate-y-1/2 text-6xl font-bold text-blue-500 opacity-50 z-10 pointer-events-none">B</div>
-              <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2 text-6xl font-bold text-green-500 opacity-50 z-10 pointer-events-none">C</div>
-              <div className="absolute right-1/4 top-1/2 transform -translate-y-1/2 translate-x-1/2 text-6xl font-bold text-yellow-600 opacity-50 z-10 pointer-events-none">D</div>
-
-              {/* 軸ラベル表示 */}
-              {myAxis && (
-                <>
-                  {/* 縦軸 上 (A) */}
-                  <div className="absolute top-2 left-1/2 transform -translate-x-1/2 pointer-events-none">
-                    <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-300 shadow-md">
-                      <span className="text-red-600">(A) {myAxis.vertical.negative}</span>
-                    </div>
-                  </div>
-                  {/* 縦軸 下 (B) */}
-                  <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 pointer-events-none">
-                    <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-300 shadow-md">
-                      <span className="text-blue-600">(B) {myAxis.vertical.positive}</span>
-                    </div>
-                  </div>
-                  {/* 横軸 左 (C) */}
-                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-300 shadow-md">
-                      <span className="text-green-600">(C) {myAxis.horizontal.negative}</span>
-                    </div>
-                  </div>
-                  {/* 横軸 右 (D) */}
-                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                    <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-300 shadow-md">
-                      <span className="text-yellow-700">(D) {myAxis.horizontal.positive}</span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* 配置されたカード（プレイヤーカラー付き） */}
-              {placedCards.map((card, idx) => {
-                const isMyCard = card.player_slot === playerSlot;
-                return (
-                  <div
-                    key={idx}
-                    draggable={isMyCard}
-                    onDragStart={() => isMyCard && handleDragStart(card.card_id, true)}
-                    className={`absolute w-20 h-20 rounded-xl flex flex-col items-center justify-center text-sm font-bold shadow-2xl border-2 border-white/20 transition-transform hover:scale-110 ${
-                      isMyCard ? 'cursor-move' : 'cursor-default'
-                    }`}
-                    style={{
-                      left: `${(card.offsets.x + 1) * 50}%`,
-                      top: `${(card.offsets.y + 1) * 50}%`,
-                      transform: 'translate(-50%, -50%)',
-                      backgroundColor: getPlayerColorStyle(card.player_slot),
-                    }}
-                  >
-                    <div className="text-white text-center px-1 leading-tight">{card.card_id}</div>
-                  </div>
-                );
-              })}
-            </div>
+            {myAxis && (
+              <GameBoard
+                axis={myAxis}
+                placedCards={placedCards}
+                players={players}
+                interactive={true}
+                onBoardClick={handleBoardClick}
+                onCardDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                currentPlayerSlot={playerSlot}
+                roomPhase={room.phase}
+              />
+            )}
           </>
         )}
 
         {room.phase === 'voting' && (
           <div className="bg-gray-800 p-6 rounded-xl">
             <h2 className="font-bold mb-4 text-xl">投票フェーズ</h2>
-            <p className="text-gray-300 mb-6">誰が人狼だと思うか投票してください</p>
+            <p className="text-gray-300 mb-4">誰が人狼だと思うか投票してください</p>
+
+            {/* 投票進行状況 */}
+            <div className="bg-gray-700/50 p-3 rounded-lg mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">投票状況</span>
+                <span className="text-sm text-gray-400">{votes.length} / {players.length}</span>
+              </div>
+              <div className="h-2 bg-gray-600 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 transition-all"
+                  style={{ width: `${(votes.length / players.length) * 100}%` }}
+                ></div>
+              </div>
+            </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {players.map((player) => {
@@ -414,95 +427,222 @@ export default function OnlineGame() {
             {isHost && (
               <button
                 onClick={async () => {
-                  await fetchVotes();
-                  await updatePhase('results');
+                  try {
+                    await fetchVotes();
+                    const results = await calculateResults();
+                    setGameResults({
+                      wolf_slot: results.wolf_slot,
+                      top_voted: results.top_voted,
+                      wolf_caught: results.wolf_caught,
+                      scores: results.scores,
+                      vote_counts: results.vote_counts,
+                      all_hands: results.all_hands,
+                      wolf_axis: results.wolf_axis,
+                      normal_axis: results.normal_axis,
+                    });
+                    await updatePhase('results');
+                  } catch (error) {
+                    console.error('Failed to calculate results:', error);
+                    alert('結果の計算に失敗しました');
+                  }
                 }}
-                className="w-full py-3 px-6 rounded-lg font-bold text-lg transition-colors bg-purple-600 hover:bg-purple-700 text-white"
+                className="w-full py-3 px-6 rounded-lg font-bold text-lg transition-colors bg-purple-600 hover:bg-purple-700 text-white mb-6"
               >
                 結果を表示
               </button>
             )}
+
+            {/* ゲームボード表示（最下部） */}
+            {myAxis && (
+              <div>
+                <h3 className="font-bold mb-3">配置状況</h3>
+                <GameBoard
+                  axis={myAxis}
+                  placedCards={placedCards}
+                  players={players}
+                  interactive={false}
+                  currentPlayerSlot={playerSlot}
+                  roomPhase={room.phase}
+                />
+              </div>
+            )}
           </div>
         )}
 
-        {room.phase === 'results' && (
+        {room.phase === 'results' && gameResults && (
           <div className="bg-gray-800 p-6 rounded-xl">
             <h2 className="font-bold mb-4 text-xl">投票結果</h2>
 
-            {(() => {
-              // 投票集計
-              const voteCounts: Record<number, number> = {};
-              votes.forEach(v => {
-                voteCounts[v.target_slot] = (voteCounts[v.target_slot] || 0) + 1;
-              });
+            <div className="space-y-4">
+              {/* デバッグ情報 */}
+              {!gameResults.normal_axis && !gameResults.wolf_axis && (
+                <div className="bg-red-900/30 p-4 rounded-lg border-2 border-red-500">
+                  <p className="text-red-400">軸データが取得できませんでした</p>
+                  <p className="text-xs text-gray-400">ブラウザのコンソールを確認してください (F12)</p>
+                </div>
+              )}
 
-              // 最多得票数
-              const maxVotes = Math.max(...Object.values(voteCounts));
-              // 最多得票者（複数いる可能性）
-              const topVoted = Object.entries(voteCounts)
-                .filter(([, count]) => count === maxVotes)
-                .map(([slot]) => parseInt(slot));
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {players.map((player) => {
+                  const voteCount = gameResults.vote_counts[player.player_slot] || 0;
+                  const isWolf = player.player_slot === gameResults.wolf_slot;
+                  const isMostVoted = gameResults.top_voted.includes(player.player_slot);
+                  const playerScore = gameResults.scores[player.player_slot.toString()] || 0;
 
-              // 人狼を特定
-              const wolfSlot = room.round_seed ? (parseInt(room.round_seed) % players.length) : null;
+                  // このプレイヤーが誰に投票したかを取得
+                  const myVote = votes.find(v => v.voter_slot === player.player_slot);
+                  const votedPlayer = myVote ? players.find(p => p.player_slot === myVote.target_slot) : null;
 
-              return (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  return (
+                    <div
+                      key={player.player_slot}
+                      className={`p-4 rounded-lg border-2 ${
+                        isMostVoted ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-600'
+                      }`}
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <div
+                          className="w-12 h-12 rounded-full border-2 border-white"
+                          style={{ backgroundColor: getPlayerColorStyle(player.player_slot) }}
+                        ></div>
+                        <div className="font-bold">{player.player_name}</div>
+                        <div className="text-lg">{voteCount} 票獲得</div>
+                        {isWolf && <div className="text-red-400 font-bold">🐺 人狼</div>}
+                        {votedPlayer && (
+                          <div className="text-xs text-gray-300">
+                            → {votedPlayer.player_name}に投票
+                          </div>
+                        )}
+                        <div className={`font-bold ${playerScore >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          スコア: {playerScore >= 0 ? '+' : ''}{playerScore}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="bg-blue-900/50 p-4 rounded-lg">
+                {gameResults.wolf_caught ? (
+                  <div>
+                    <div className="text-green-400 font-bold text-xl mb-2">✓ 村人の勝利！</div>
+                    <div className="text-gray-300">人狼が最多得票を獲得しました</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-red-400 font-bold text-xl mb-2">✗ 人狼の勝利！</div>
+                    <div className="text-gray-300">人狼は発見されませんでした</div>
+                  </div>
+                )}
+              </div>
+
+              {/* 全プレイヤーの手札 */}
+              {gameResults.all_hands && (
+                <div className="bg-gray-700/50 p-4 rounded-lg">
+                  <h3 className="font-bold mb-3">全プレイヤーの手札</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {players.map((player) => {
-                      const voteCount = voteCounts[player.player_slot] || 0;
-                      const isWolf = player.player_slot === wolfSlot;
-                      const isMostVoted = topVoted.includes(player.player_slot);
-
+                      const hand = gameResults.all_hands[player.player_slot.toString()] || [];
+                      const isWolf = player.player_slot === gameResults.wolf_slot;
                       return (
                         <div
                           key={player.player_slot}
-                          className={`p-4 rounded-lg border-2 ${
-                            isMostVoted ? 'border-yellow-400 bg-yellow-900/30' : 'border-gray-600'
-                          }`}
+                          className={`bg-gray-800 p-2 rounded ${isWolf ? 'border-2 border-red-500' : ''}`}
                         >
-                          <div className="flex flex-col items-center gap-2">
+                          <div className="flex items-center gap-2 mb-1">
                             <div
-                              className="w-12 h-12 rounded-full border-2 border-white"
+                              className="w-4 h-4 rounded-full border border-white"
                               style={{ backgroundColor: getPlayerColorStyle(player.player_slot) }}
                             ></div>
-                            <div className="font-bold">{player.player_name}</div>
-                            <div className="text-lg">{voteCount} 票</div>
-                            {isWolf && <div className="text-red-400 font-bold">🐺 人狼</div>}
+                            <span className="text-sm font-bold">{player.player_name}</span>
+                            {isWolf && <span className="text-xs text-red-400">🐺</span>}
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {hand.map((card, idx) => (
+                              <span key={idx} className="text-xs bg-gray-700 px-2 py-0.5 rounded">
+                                {card}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-
-                  <div className="bg-blue-900/50 p-4 rounded-lg">
-                    {wolfSlot !== null && topVoted.includes(wolfSlot) ? (
-                      <div>
-                        <div className="text-green-400 font-bold text-xl mb-2">✓ 村人の勝利！</div>
-                        <div className="text-gray-300">人狼が最多得票を獲得しました</div>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="text-red-400 font-bold text-xl mb-2">✗ 人狼の勝利！</div>
-                        <div className="text-gray-300">人狼は発見されませんでした</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {isHost && (
-                    <button
-                      onClick={() => {
-                        // 次ラウンドの実装は後で
-                        alert('次ラウンド機能は未実装です');
-                      }}
-                      className="w-full py-3 px-6 rounded-lg font-bold text-lg transition-colors bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      次のラウンドへ
-                    </button>
-                  )}
                 </div>
-              );
-            })()}
+              )}
+
+              {/* 累積スコア表示 */}
+              {room.scores && (() => {
+                const totalScores = JSON.parse(room.scores);
+                return (
+                  <div className="bg-gray-700/50 p-4 rounded-lg">
+                    <h3 className="font-bold mb-3">累積スコア</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {players.map((player) => {
+                        const totalScore = totalScores[player.player_slot.toString()] || 0;
+                        return (
+                          <div key={player.player_slot} className="flex items-center gap-2">
+                            <div
+                              className="w-6 h-6 rounded-full border border-white"
+                              style={{ backgroundColor: getPlayerColorStyle(player.player_slot) }}
+                            ></div>
+                            <span className="text-sm">{player.player_name}</span>
+                            <span className={`font-bold ml-auto ${totalScore >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {totalScore >= 0 ? '+' : ''}{totalScore}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {isHost && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await startNextRound();
+                      setGameResults(null);
+                    } catch (error) {
+                      console.error('Failed to start next round:', error);
+                      alert('次ラウンド開始に失敗しました');
+                    }
+                  }}
+                  className="w-full py-3 px-6 rounded-lg font-bold text-lg transition-colors bg-green-600 hover:bg-green-700 text-white mb-6"
+                >
+                  次のラウンドへ
+                </button>
+              )}
+
+              {/* ゲームボード（最下部）（村人の軸 + 人狼の軸を1つのボードに表示） */}
+              {gameResults.normal_axis && gameResults.wolf_axis ? (
+                <div>
+                  <h3 className="font-bold mb-3">配置結果（正解の軸 + 人狼の軸）</h3>
+                  <GameBoard
+                    axis={gameResults.normal_axis}
+                    wolfAxis={gameResults.wolf_axis}
+                    placedCards={placedCards}
+                    players={players}
+                    interactive={false}
+                    currentPlayerSlot={playerSlot}
+                    roomPhase={room.phase}
+                  />
+                </div>
+              ) : gameResults.normal_axis ? (
+                <div>
+                  <h3 className="font-bold mb-3">配置結果</h3>
+                  <GameBoard
+                    axis={gameResults.normal_axis}
+                    placedCards={placedCards}
+                    players={players}
+                    interactive={false}
+                    currentPlayerSlot={playerSlot}
+                    roomPhase={room.phase}
+                  />
+                </div>
+              ) : null}
+            </div>
           </div>
         )}
       </div>

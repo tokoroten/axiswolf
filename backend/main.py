@@ -2,8 +2,9 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
+import asyncio
 from axis_data import generate_axis_pair, generate_wolf_axis_pair
 
 app = FastAPI()
@@ -61,16 +62,41 @@ votes: Dict[str, List[dict]] = {}
 class ConnectionManager:
     def __init__(self):
         self.active_connections: Dict[str, List[WebSocket]] = {}
+        # player_id -> WebSocket の対応を保持
+        self.player_connections: Dict[str, WebSocket] = {}
+        # WebSocket -> player_id の逆引き
+        self.websocket_to_player: Dict[WebSocket, str] = {}
 
-    async def connect(self, websocket: WebSocket, room_code: str):
+    async def connect(self, websocket: WebSocket, room_code: str, player_id: str = None):
         await websocket.accept()
         if room_code not in self.active_connections:
             self.active_connections[room_code] = []
         self.active_connections[room_code].append(websocket)
 
+        if player_id:
+            self.player_connections[player_id] = websocket
+            self.websocket_to_player[websocket] = player_id
+
     def disconnect(self, websocket: WebSocket, room_code: str):
         if room_code in self.active_connections:
-            self.active_connections[room_code].remove(websocket)
+            if websocket in self.active_connections[room_code]:
+                self.active_connections[room_code].remove(websocket)
+
+        # player_id の紐付けも削除
+        if websocket in self.websocket_to_player:
+            player_id = self.websocket_to_player[websocket]
+            if player_id in self.player_connections:
+                del self.player_connections[player_id]
+            del self.websocket_to_player[websocket]
+
+    def get_online_players(self, room_code: str) -> List[str]:
+        """ルーム内のオンラインプレイヤーIDのリストを返す"""
+        online_player_ids = []
+        if room_code in self.active_connections:
+            for ws in self.active_connections[room_code]:
+                if ws in self.websocket_to_player:
+                    online_player_ids.append(self.websocket_to_player[ws])
+        return online_player_ids
 
     async def broadcast(self, room_code: str, message: dict):
         if room_code in self.active_connections:
@@ -81,6 +107,29 @@ class ConnectionManager:
                     pass
 
 manager = ConnectionManager()
+
+# 古いルームを削除する関数
+def cleanup_old_rooms():
+    """14日間アクティビティのないルームを削除"""
+    now = datetime.now()
+    cutoff_time = now - timedelta(days=14)
+
+    rooms_to_delete = []
+    for room_code, room_data in rooms.items():
+        last_activity = datetime.fromisoformat(room_data.get("last_activity_at", room_data["created_at"]))
+        if last_activity < cutoff_time:
+            rooms_to_delete.append(room_code)
+
+    for room_code in rooms_to_delete:
+        if room_code in rooms:
+            del rooms[room_code]
+        if room_code in players:
+            del players[room_code]
+        if room_code in cards:
+            del cards[room_code]
+        if room_code in votes:
+            del votes[room_code]
+        print(f"[CLEANUP] Deleted inactive room: {room_code}")
 
 # Pydanticモデル
 class CreateRoomRequest(BaseModel):
@@ -114,6 +163,7 @@ async def create_room(req: CreateRoomRequest):
     if req.room_code in rooms:
         raise HTTPException(status_code=400, detail="Room already exists")
 
+    now = datetime.now()
     rooms[req.room_code] = {
         "room_code": req.room_code,
         "phase": "lobby",
@@ -126,8 +176,9 @@ async def create_room(req: CreateRoomRequest):
         "round_seed": None,
         "scores": "{}",
         "discussion_deadline": None,
-        "created_at": datetime.now().isoformat(),
-        "updated_at": datetime.now().isoformat(),
+        "created_at": now.isoformat(),
+        "updated_at": now.isoformat(),
+        "last_activity_at": now.isoformat(),
     }
 
     players[req.room_code] = [{
@@ -167,7 +218,7 @@ async def join_room(req: JoinRoomRequest):
     if room["phase"] != "lobby":
         raise HTTPException(
             status_code=403,
-            detail="Cannot join room after game has started. Please wait for the next round."
+            detail="Cannot join room after game has started. Please create a new room or wait for this game to finish."
         )
 
     # 次のスロット番号取得
@@ -246,9 +297,17 @@ async def get_room(room_code: str):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
+    # オンラインプレイヤーIDのリストを取得
+    online_player_ids = manager.get_online_players(room_code)
+
+    # プレイヤー情報にオンライン状態を追加
+    room_players = players.get(room_code, [])
+    for player in room_players:
+        player["is_online"] = player["player_id"] in online_player_ids
+
     return {
         "room": rooms[room_code],
-        "players": players.get(room_code, [])
+        "players": room_players
     }
 
 # フェーズ更新
@@ -257,8 +316,10 @@ async def update_phase(room_code: str, req: UpdatePhaseRequest):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
+    now = datetime.now()
     rooms[room_code]["phase"] = req.phase
-    rooms[room_code]["updated_at"] = datetime.now().isoformat()
+    rooms[room_code]["updated_at"] = now.isoformat()
+    rooms[room_code]["last_activity_at"] = now.isoformat()
 
     # 軸データが提供されていない場合は自動生成
     if req.phase == 'placement' and not req.axis_payload:
@@ -311,6 +372,7 @@ async def place_card(room_code: str, player_id: str, req: PlaceCardRequest):
         c["player_slot"] == player["player_slot"] and c["card_id"] == req.card_id
     )]
 
+    now = datetime.now()
     room_cards.append({
         "room_code": room_code,
         "round": rooms[room_code]["active_round"],
@@ -319,9 +381,12 @@ async def place_card(room_code: str, player_id: str, req: PlaceCardRequest):
         "quadrant": req.quadrant,
         "offsets": req.offsets,
         "locked": 0,
-        "placed_at": datetime.now().isoformat(),
+        "placed_at": now.isoformat(),
     })
     cards[room_code] = room_cards
+
+    # 最終アクティビティ時刻を更新
+    rooms[room_code]["last_activity_at"] = now.isoformat()
 
     await manager.broadcast(room_code, {
         "type": "card_placed",
@@ -373,14 +438,18 @@ async def submit_vote(room_code: str, player_id: str, req: SubmitVoteRequest):
     # 投票追加/更新
     room_votes = votes.get(room_code, [])
     room_votes = [v for v in room_votes if v["voter_slot"] != player["player_slot"]]
+    now = datetime.now()
     room_votes.append({
         "room_code": room_code,
         "round": rooms[room_code]["active_round"],
         "voter_slot": player["player_slot"],
         "target_slot": req.target_slot,
-        "submitted_at": datetime.now().isoformat(),
+        "submitted_at": now.isoformat(),
     })
     votes[room_code] = room_votes
+
+    # 最終アクティビティ時刻を更新
+    rooms[room_code]["last_activity_at"] = now.isoformat()
 
     await manager.broadcast(room_code, {
         "type": "vote_submitted",
@@ -407,6 +476,9 @@ async def calculate_results(room_code: str):
     room = rooms[room_code]
     room_players = players.get(room_code, [])
     room_votes = votes.get(room_code, [])
+
+    # 最終アクティビティ時刻を更新
+    rooms[room_code]["last_activity_at"] = datetime.now().isoformat()
 
     # 人狼を特定
     if not room["round_seed"]:
@@ -499,12 +571,14 @@ async def start_next_round(room_code: str):
     wolf_axis = generate_wolf_axis_pair(normal_axis, themes, new_seed)
 
     # ルームの状態を更新
+    now = datetime.now()
     room["active_round"] = new_round
     room["phase"] = "placement"
     room["round_seed"] = str(new_seed)
     room["axis_payload"] = normal_axis
     room["wolf_axis_payload"] = wolf_axis
-    room["updated_at"] = datetime.now().isoformat()
+    room["updated_at"] = now.isoformat()
+    room["last_activity_at"] = now.isoformat()
 
     # 前ラウンドのカードと投票をクリア
     if room_code in cards:
@@ -546,13 +620,47 @@ async def get_all_rooms():
 
 # WebSocket接続
 @app.websocket("/ws/{room_code}")
-async def websocket_endpoint(websocket: WebSocket, room_code: str):
-    await manager.connect(websocket, room_code)
+async def websocket_endpoint(websocket: WebSocket, room_code: str, player_id: Optional[str] = None):
+    print(f"[WebSocket] 接続要求: room={room_code}, player_id={player_id}")
+    await manager.connect(websocket, room_code, player_id)
+    print(f"[WebSocket] 接続完了: room={room_code}, player_id={player_id}")
+
+    # 接続時に他のプレイヤーに通知
+    if player_id:
+        await manager.broadcast(room_code, {
+            "type": "player_online",
+            "player_id": player_id
+        })
+        print(f"[WebSocket] player_online ブロードキャスト: {player_id}")
+
     try:
         while True:
             data = await websocket.receive_text()
+            print(f"[WebSocket] メッセージ受信: {data}")
     except WebSocketDisconnect:
+        print(f"[WebSocket] 切断: room={room_code}, player_id={player_id}")
+        # 切断時に他のプレイヤーに通知
+        if player_id:
+            await manager.broadcast(room_code, {
+                "type": "player_offline",
+                "player_id": player_id
+            })
         manager.disconnect(websocket, room_code)
+    except Exception as e:
+        print(f"[WebSocket] エラー: {e}")
+        manager.disconnect(websocket, room_code)
+
+@app.on_event("startup")
+async def startup_event():
+    """アプリケーション起動時に定期クリーンアップタスクを開始"""
+    asyncio.create_task(periodic_cleanup())
+
+async def periodic_cleanup():
+    """24時間ごとに古いルームをクリーンアップ"""
+    while True:
+        await asyncio.sleep(86400)  # 24時間 = 86400秒
+        cleanup_old_rooms()
+        print("[CLEANUP] Periodic cleanup completed")
 
 if __name__ == "__main__":
     import uvicorn

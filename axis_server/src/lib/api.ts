@@ -28,6 +28,7 @@ export interface Player {
   hand_committed_at: string | null;
   connected_at: string;
   last_seen_at: string;
+  is_online?: boolean;
 }
 
 export interface PlacedCard {
@@ -179,7 +180,10 @@ export const api = {
     return res.json();
   },
 
-  connectWebSocket(roomCode: string): WebSocket {
-    return new WebSocket(`${WS_BASE}/${roomCode}`);
+  connectWebSocket(roomCode: string, playerId?: string): WebSocket {
+    const url = playerId
+      ? `${WS_BASE}/${roomCode}?player_id=${playerId}`
+      : `${WS_BASE}/${roomCode}`;
+    return new WebSocket(url);
   },
 };

@@ -4,6 +4,7 @@ import { useGame } from '../contexts/GameContext';
 import { getPlayerColorStyle } from '../utils/playerColors';
 import GameBoard from '../components/GameBoard';
 import GameRules from '../components/GameRules';
+import PlayerAvatar from '../components/PlayerAvatar';
 import { api } from '../lib/api';
 
 export default function OnlineGame() {
@@ -29,9 +30,17 @@ export default function OnlineGame() {
   } | null>(null);
   const [showRules, setShowRules] = useState(false);
 
+  // roomCodeがない場合、LocalStorageから復元を試みる
   useEffect(() => {
     if (!roomCode) {
-      navigate('/online');
+      const savedRoomCode = localStorage.getItem('online_room_code');
+      if (savedRoomCode) {
+        // LocalStorageにルームコードがあれば、そのページにリダイレクト
+        navigate(`/online/${savedRoomCode}`, { replace: true });
+      } else {
+        // LocalStorageにもない場合はトップページへ
+        navigate('/online');
+      }
     }
   }, [roomCode, navigate]);
 
@@ -47,24 +56,7 @@ export default function OnlineGame() {
         console.error('[OnlineGame] Failed to leave room:', error);
       }
     }
-
-    // LocalStorageをクリア
-    localStorage.removeItem('online_room_code');
-    localStorage.removeItem('online_player_id');
-    localStorage.removeItem('online_player_name');
   };
-
-  // ブラウザを閉じる/タブを閉じるときに退出処理
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      handleLeaveRoom();
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [roomCode]);
 
   // 既に参加済みかチェック
   const isJoined = playerSlot !== null && room !== null;
@@ -206,18 +198,13 @@ export default function OnlineGame() {
   };
 
   // 未参加の場合はOnlineHomeにリダイレクト
-  useEffect(() => {
-    if (!isJoined && roomCode) {
-      navigate('/online');
-    }
-  }, [isJoined, roomCode, navigate]);
-
+  // 再接続中の表示
   if (!isJoined) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="mb-4">ルームに参加していません...</p>
-          <p className="text-sm text-gray-400">リダイレクト中...</p>
+          <p className="mb-4">接続中...</p>
+          <p className="text-sm text-gray-400">ゲームルームに参加しています</p>
         </div>
       </div>
     );
@@ -292,10 +279,7 @@ export default function OnlineGame() {
               <ul className="space-y-2">
                 {players.map((p) => (
                   <li key={p.player_slot} className="flex items-center gap-3 bg-gray-700 px-3 py-2 rounded">
-                    <div
-                      className="w-5 h-5 rounded-full border-2 border-white flex-shrink-0"
-                      style={{ backgroundColor: getPlayerColorStyle(p.player_slot) }}
-                    ></div>
+                    <PlayerAvatar player={p} size="medium" />
                     <span className="font-medium">{p.player_name}</span>
                     {p.is_host === 1 && (
                       <span className="text-xs bg-yellow-600 px-2 py-0.5 rounded ml-auto">ホスト</span>
@@ -407,10 +391,7 @@ export default function OnlineGame() {
                   return (
                     <div key={player.player_slot} className="bg-gray-700 p-3 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <div
-                          className="w-4 h-4 rounded-full border border-white"
-                          style={{ backgroundColor: getPlayerColorStyle(player.player_slot) }}
-                        ></div>
+                        <PlayerAvatar player={player} size="small" />
                         <span className="font-medium text-sm truncate">{player.player_name}</span>
                       </div>
                       <div className="text-xs text-gray-400">
@@ -497,10 +478,7 @@ export default function OnlineGame() {
                     `}
                   >
                     <div className="flex flex-col items-center gap-2">
-                      <div
-                        className="w-12 h-12 rounded-full border-2 border-white"
-                        style={{ backgroundColor: getPlayerColorStyle(player.player_slot) }}
-                      ></div>
+                      <PlayerAvatar player={player} size="large" />
                       <div className="font-bold">{player.player_name}</div>
                       {isMyself && <div className="text-xs text-gray-400">（自分）</div>}
                       {hasVoted && <div className="text-green-400 text-xs">✓ 投票済み</div>}
@@ -607,10 +585,7 @@ export default function OnlineGame() {
                       }`}
                     >
                       <div className="flex flex-col items-center gap-2">
-                        <div
-                          className="w-12 h-12 rounded-full border-2 border-white"
-                          style={{ backgroundColor: getPlayerColorStyle(player.player_slot) }}
-                        ></div>
+                        <PlayerAvatar player={player} size="large" />
                         <div className="font-bold">{player.player_name}</div>
                         <div className="text-lg">{voteCount} 票獲得</div>
                         {isWolf && <div className="text-red-400 font-bold">🐺 人狼</div>}

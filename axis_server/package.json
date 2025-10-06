@@ -7,18 +7,10 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "setup-db": "node scripts/setup-db.mjs",
-    "reset-db": "node scripts/reset-db.mjs",
-    "migrate": "node scripts/apply-migration.mjs",
-    "db:migrate": "cmd /c scripts\\migrate-psql.cmd",
-    "db:help": "cmd /c MIGRATE_NOW.cmd"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.58.0",
     "@types/qrcode": "^1.5.5",
-    "dotenv": "^17.2.3",
-    "pg": "^8.16.3",
     "qrcode": "^1.5.4",
     "qrcode.js": "^0.0.1",
     "react": "^19.1.1",

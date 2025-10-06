@@ -122,7 +122,7 @@ export default function Home() {
           >
             🌐 オンライン対戦モード
           </button>
-          <p className="text-xs text-gray-500 mt-2">完全オンライン対戦（Supabase使用）</p>
+          <p className="text-xs text-gray-500 mt-2">完全オンライン対戦（サーバー同期）</p>
         </div>
 
         {!roomCreated ? (

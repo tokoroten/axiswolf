@@ -278,26 +278,52 @@ export default function OnlineGame() {
         )}
 
         {room.phase === 'lobby' && (
-          <div className="bg-gray-800 p-4 rounded mb-4">
-            <h2 className="font-bold mb-2">プレイヤー一覧</h2>
-            <ul className="space-y-2">
-              {players.map((p) => (
-                <li key={p.player_slot} className="flex items-center gap-3 bg-gray-700 px-3 py-2 rounded">
-                  <div
-                    className="w-5 h-5 rounded-full border-2 border-white flex-shrink-0"
-                    style={{ backgroundColor: getPlayerColorStyle(p.player_slot) }}
-                  ></div>
-                  <span className="font-medium">{p.player_name}</span>
-                  {p.is_host === 1 && (
-                    <span className="text-xs bg-yellow-600 px-2 py-0.5 rounded ml-auto">ホスト</span>
-                  )}
-                  {p.player_slot === playerSlot && (
-                    <span className="text-xs bg-blue-600 px-2 py-0.5 rounded ml-auto">あなた</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <>
+            <div className="bg-gray-800 p-4 rounded mb-4">
+              <h2 className="font-bold mb-2">プレイヤー一覧</h2>
+              <ul className="space-y-2">
+                {players.map((p) => (
+                  <li key={p.player_slot} className="flex items-center gap-3 bg-gray-700 px-3 py-2 rounded">
+                    <div
+                      className="w-5 h-5 rounded-full border-2 border-white flex-shrink-0"
+                      style={{ backgroundColor: getPlayerColorStyle(p.player_slot) }}
+                    ></div>
+                    <span className="font-medium">{p.player_name}</span>
+                    {p.is_host === 1 && (
+                      <span className="text-xs bg-yellow-600 px-2 py-0.5 rounded ml-auto">ホスト</span>
+                    )}
+                    {p.player_slot === playerSlot && (
+                      <span className="text-xs bg-blue-600 px-2 py-0.5 rounded ml-auto">あなた</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* インバイトリンク */}
+            <div className="bg-gradient-to-r from-purple-900 to-blue-900 p-4 rounded mb-4 border-2 border-purple-500">
+              <h2 className="font-bold mb-2 text-yellow-300">🔗 プレイヤーを招待</h2>
+              <p className="text-sm text-gray-300 mb-3">このリンクを共有してプレイヤーを招待しましょう</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  readOnly
+                  value={`${window.location.origin}/online?room=${roomCode}`}
+                  className="flex-1 px-3 py-2 bg-gray-800 text-white rounded font-mono text-sm border border-gray-600"
+                  onClick={(e) => e.currentTarget.select()}
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/online?room=${roomCode}`);
+                    alert('リンクをコピーしました！');
+                  }}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium whitespace-nowrap transition-colors"
+                >
+                  📋 コピー
+                </button>
+              </div>
+            </div>
+          </>
         )}
 
         {room.phase === 'placement' && myHand.length > 0 && (

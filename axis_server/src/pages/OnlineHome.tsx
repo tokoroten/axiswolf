@@ -1,15 +1,25 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 
 export default function OnlineHome() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { createRoom, joinRoom } = useGame();
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [playerId] = useState(() => `player_${Math.random().toString(36).slice(2)}`);
   const [savedRoom, setSavedRoom] = useState<{ roomCode: string; playerName: string } | null>(null);
+
+  // URLパラメータからルームコードを取得
+  useEffect(() => {
+    const inviteRoomCode = searchParams.get('room');
+    if (inviteRoomCode) {
+      setRoomCode(inviteRoomCode.toUpperCase());
+      setMode('join'); // 自動的に参加モードに切り替え
+    }
+  }, [searchParams]);
 
   // LocalStorageから保存されたルーム情報を読み込み
   useEffect(() => {
@@ -116,13 +126,20 @@ export default function OnlineHome() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               ルームコード
+              {searchParams.get('room') && (
+                <span className="ml-2 text-xs text-green-600 font-bold">✓ 招待リンクから自動入力</span>
+              )}
             </label>
             <input
               type="text"
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               placeholder="例: ABCD1234"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg font-mono"
+              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg font-mono ${
+                searchParams.get('room')
+                  ? 'border-green-400 bg-green-50 focus:border-green-500'
+                  : 'border-gray-200 focus:border-purple-500'
+              }`}
               maxLength={8}
             />
           </div>

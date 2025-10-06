@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 
@@ -9,6 +9,24 @@ export default function OnlineHome() {
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState('');
   const [playerId] = useState(() => `player_${Math.random().toString(36).slice(2)}`);
+  const [savedRoom, setSavedRoom] = useState<{ roomCode: string; playerName: string } | null>(null);
+
+  // LocalStorageから保存されたルーム情報を読み込み
+  useEffect(() => {
+    const savedRoomCode = localStorage.getItem('online_room_code');
+    const savedPlayerName = localStorage.getItem('online_player_name');
+
+    if (savedRoomCode && savedPlayerName) {
+      setSavedRoom({ roomCode: savedRoomCode, playerName: savedPlayerName });
+    }
+  }, []);
+
+  // 保存されたルームに復帰
+  const handleRejoin = () => {
+    if (savedRoom) {
+      navigate(`/online/${savedRoom.roomCode}`);
+    }
+  };
 
   const handleCreate = async () => {
     if (!roomCode.trim() || !playerName.trim()) {
@@ -47,6 +65,29 @@ export default function OnlineHome() {
         <p className="text-center text-gray-600 mb-6">
           遠隔地のプレイヤーとリアルタイムで対戦
         </p>
+
+        {/* 保存されたルームに復帰するボタン */}
+        {savedRoom && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg">
+            <p className="text-sm text-gray-700 mb-2 font-medium">前回のゲームに戻る</p>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs text-gray-500">ルーム</p>
+                <p className="font-bold text-lg font-mono text-green-700">{savedRoom.roomCode}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">プレイヤー名</p>
+                <p className="font-bold text-green-700">{savedRoom.playerName}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleRejoin}
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2.5 rounded-lg font-bold hover:from-green-700 hover:to-emerald-700 transition-all shadow-md"
+            >
+              このゲームに復帰する →
+            </button>
+          </div>
+        )}
 
         <div className="flex gap-2 mb-6">
           <button

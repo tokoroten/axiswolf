@@ -11,6 +11,7 @@ export default function OnlineHome() {
   const [playerName, setPlayerName] = useState('');
   const [playerId] = useState(() => `player_${Math.random().toString(36).slice(2)}`);
   const [savedRoom, setSavedRoom] = useState<{ roomCode: string; playerName: string } | null>(null);
+  const [showRules, setShowRules] = useState(false);
 
   // URLパラメータからルームコードを取得
   useEffect(() => {
@@ -32,15 +33,54 @@ export default function OnlineHome() {
   }, []);
 
   // 保存されたルームに復帰
-  const handleRejoin = () => {
-    if (savedRoom) {
-      navigate(`/online/${savedRoom.roomCode}`);
+  const handleRejoin = async () => {
+    if (!savedRoom) return;
+
+    const savedPlayerId = localStorage.getItem('online_player_id');
+    if (!savedPlayerId) {
+      alert('プレイヤー情報が見つかりません');
+      return;
     }
+
+    try {
+      await joinRoom(savedRoom.roomCode, savedPlayerId, savedRoom.playerName);
+      navigate(`/online/${savedRoom.roomCode}`);
+    } catch (error: any) {
+      console.error('Failed to rejoin room:', error);
+
+      // エラー処理
+      if (error?.message?.includes('after game has started') || error?.response?.status === 403) {
+        alert('このルームは既にゲーム中です。\n\n途中参加はできません。\n新しいゲームが始まるまでお待ちいただくか、\n別のルームを作成してください。');
+      } else if (error?.response?.status === 404) {
+        alert('ルームが見つかりません。\nルームは削除された可能性があります。');
+        // LocalStorageをクリア
+        localStorage.removeItem('online_room_code');
+        localStorage.removeItem('online_player_id');
+        localStorage.removeItem('online_player_name');
+        setSavedRoom(null);
+      } else {
+        alert('ルーム参加に失敗しました');
+      }
+    }
+  };
+
+  // ランダムなルームコードを生成
+  const generateRoomCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字(I, O, 0, 1)を除外
+    let code = '';
+    for (let i = 0; i < 10; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setRoomCode(code);
   };
 
   const handleCreate = async () => {
     if (!roomCode.trim() || !playerName.trim()) {
       alert('ルームコードと名前を入力してください');
+      return;
+    }
+    if (roomCode.trim().length < 4) {
+      alert('ルームコードは4文字以上で入力してください');
       return;
     }
     try {
@@ -65,7 +105,7 @@ export default function OnlineHome() {
 
       // ゲーム開始後の参加エラーを特別に処理
       if (error?.message?.includes('after game has started') || error?.response?.status === 403) {
-        alert('このルームはゲームが既に開始されています。\n次のラウンドまでお待ちください。');
+        alert('このルームは既にゲーム中です。\n\n途中参加はできません。\n新しいゲームが始まるまでお待ちいただくか、\n別のルームを作成してください。');
       } else if (error?.response?.status === 404) {
         alert('ルームが見つかりません。\nルームコードを確認してください。');
       } else {
@@ -77,12 +117,20 @@ export default function OnlineHome() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-4 flex items-center justify-center">
       <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-          オンライン対戦モード
-        </h1>
-        <p className="text-center text-gray-600 mb-6">
-          遠隔地のプレイヤーとリアルタイムで対戦
-        </p>
+        <div className="text-center mb-2">
+          <h1 className="text-4xl font-bold mb-1 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            アクシスウルフ
+          </h1>
+          <p className="text-sm text-gray-500 mb-3">AXIS WOLF</p>
+        </div>
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-3 mb-6">
+          <p className="text-center text-purple-700 font-bold text-lg">
+            オンライン対戦モード
+          </p>
+          <p className="text-center text-gray-600 text-sm">
+            遠隔地のプレイヤーとリアルタイムで対戦
+          </p>
+        </div>
 
         {/* 保存されたルームに復帰するボタン */}
         {savedRoom && (
@@ -107,79 +155,138 @@ export default function OnlineHome() {
           </div>
         )}
 
-        <div className="flex gap-2 mb-6">
+        {/* タブUI */}
+        <div className="flex border-b-2 border-gray-200 mb-6">
           <button
             onClick={() => setMode('create')}
-            className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+            className={`flex-1 py-3 font-bold transition-all relative ${
               mode === 'create'
-                ? 'bg-purple-600 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'text-purple-600'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             ルーム作成
+            {mode === 'create' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600"></div>
+            )}
           </button>
           <button
             onClick={() => setMode('join')}
-            className={`flex-1 py-3 rounded-lg font-bold transition-all ${
+            className={`flex-1 py-3 font-bold transition-all relative ${
               mode === 'join'
-                ? 'bg-blue-600 text-white shadow-lg'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? 'text-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
             }`}
           >
             ルーム参加
+            {mode === 'join' && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"></div>
+            )}
           </button>
         </div>
 
+        {/* タブコンテンツ */}
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              ルームコード
-              {searchParams.get('room') && (
-                <span className="ml-2 text-xs text-green-600 font-bold">✓ 招待リンクから自動入力</span>
-              )}
-            </label>
-            <input
-              type="text"
-              value={roomCode}
-              onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-              placeholder="例: ABCD1234"
-              className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg font-mono ${
-                searchParams.get('room')
-                  ? 'border-green-400 bg-green-50 focus:border-green-500'
-                  : 'border-gray-200 focus:border-purple-500'
-              }`}
-              maxLength={8}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              あなたの名前
-            </label>
-            <input
-              type="text"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              placeholder="名前を入力"
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
-            />
-          </div>
-
           {mode === 'create' ? (
-            <button
-              onClick={handleCreate}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg"
-            >
-              ルームを作成
-            </button>
+            // ルーム作成タブ
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ルームコード（4文字以上）
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={roomCode}
+                    onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                    placeholder="例: ABCD1234"
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg font-mono"
+                    maxLength={10}
+                    minLength={4}
+                  />
+                  <button
+                    type="button"
+                    onClick={generateRoomCode}
+                    className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors whitespace-nowrap"
+                    title="ランダムなコードを生成"
+                  >
+                    🎲 自動生成
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  あなたの名前
+                </label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="名前を入力"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+                />
+              </div>
+
+              <button
+                onClick={handleCreate}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg"
+              >
+                作成して開始 →
+              </button>
+            </>
           ) : (
-            <button
-              onClick={handleJoin}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
-            >
-              ルームに参加
-            </button>
+            // ルーム参加タブ
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ルームコード
+                  {searchParams.get('room') && (
+                    <span className="ml-2 text-xs text-green-600 font-bold">✓ 招待リンクから自動入力</span>
+                  )}
+                </label>
+                <input
+                  type="text"
+                  value={roomCode}
+                  onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                  placeholder="例: ABCD1234"
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg font-mono ${
+                    searchParams.get('room')
+                      ? 'border-green-400 bg-green-50 focus:border-green-500'
+                      : 'border-gray-200 focus:border-blue-500'
+                  }`}
+                  maxLength={10}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  あなたの名前
+                </label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  placeholder="名前を入力"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                />
+              </div>
+
+              <button
+                onClick={handleJoin}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg"
+              >
+                参加する →
+              </button>
+            </>
           )}
+
+          <button
+            onClick={() => setShowRules(true)}
+            className="w-full mb-3 py-2 px-4 bg-white border-2 border-purple-200 text-purple-600 rounded-lg font-medium hover:bg-purple-50 transition-colors flex items-center justify-center gap-2"
+          >
+            📖 ルールを確認する
+          </button>
 
           <button
             onClick={() => navigate('/')}
@@ -189,6 +296,81 @@ export default function OnlineHome() {
           </button>
         </div>
       </div>
+
+      {/* ルール説明ダイアログ */}
+      {showRules && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => setShowRules(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-800">ゲームルール</h2>
+              <button
+                onClick={() => setShowRules(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              <section>
+                <h3 className="text-xl font-bold text-purple-600 mb-3">🎯 ゲームの目的</h3>
+                <p className="text-gray-700 leading-relaxed">
+                  全員に共有された二軸に沿ってカードを配置します。ただし1人だけは異なる軸が提示されており、その人（人狼）を見破りましょう。
+                </p>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-bold text-purple-600 mb-3">👥 プレイ人数・時間</h3>
+                <ul className="list-disc list-inside text-gray-700 space-y-2">
+                  <li><strong>人数：</strong>4人（3〜8人でも可）</li>
+                  <li><strong>時間：</strong>1ラウンド 5〜8分</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-bold text-purple-600 mb-3">📝 遊び方</h3>
+                <ol className="list-decimal list-inside text-gray-700 space-y-3">
+                  <li><strong>ルーム作成：</strong>ホストがルームコードを設定してルーム作成</li>
+                  <li><strong>参加：</strong>他のプレイヤーがルームコードを入力して参加</li>
+                  <li><strong>軸の確認：</strong>全員に共通の二軸が表示される（人狼だけ異なる二軸）</li>
+                  <li><strong>カード配置：</strong>物理カードをその軸上に配置しながら議論</li>
+                  <li><strong>投票：</strong>全員が3枚配置したら、人狼だと思う人に投票</li>
+                  <li><strong>結果発表：</strong>最多票を集めた人が人狼候補として明かされる</li>
+                  <li><strong>得点計算：</strong>正解・不正解に応じて得点が加算される</li>
+                </ol>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-bold text-purple-600 mb-3">⚡ ポイント</h3>
+                <ul className="list-disc list-inside text-gray-700 space-y-2">
+                  <li>人狼は自分の軸がバレないようにカードを配置する</li>
+                  <li>村人は議論を通じて人狼の違和感を見つける</li>
+                  <li>カードの配置位置と理由が重要な手がかりになる</li>
+                </ul>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-bold text-purple-600 mb-3">🎮 オンライン対戦の特徴</h3>
+                <ul className="list-disc list-inside text-gray-700 space-y-2">
+                  <li>遠隔地のプレイヤーとリアルタイムで対戦可能</li>
+                  <li>カードの配置状況がリアルタイムで同期される</li>
+                  <li>投票と結果発表が自動で進行する</li>
+                  <li>複数ラウンドの累計スコアで競う</li>
+                </ul>
+              </section>
+            </div>
+
+            <div className="sticky bottom-0 bg-white border-t p-6">
+              <button
+                onClick={() => setShowRules(false)}
+                className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

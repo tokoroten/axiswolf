@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { getPlayerColorStyle } from '../utils/playerColors';
 import GameBoard from '../components/GameBoard';
+import GameRules from '../components/GameRules';
 import { api } from '../lib/api';
 
 export default function OnlineGame() {
@@ -26,6 +27,7 @@ export default function OnlineGame() {
     wolf_axis: any;
     normal_axis: any;
   } | null>(null);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     if (!roomCode) {
@@ -255,6 +257,12 @@ export default function OnlineGame() {
               </div>
             )}
             <button
+              onClick={() => setShowRules(true)}
+              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded text-sm font-medium transition-colors"
+            >
+              📖 ルール
+            </button>
+            <button
               onClick={async () => {
                 if (confirm('ルームから退出しますか？')) {
                   await handleLeaveRoom();
@@ -322,6 +330,35 @@ export default function OnlineGame() {
                   📋 コピー
                 </button>
               </div>
+            </div>
+
+            {/* ゲームルール説明 */}
+            <div className="bg-gradient-to-r from-blue-900 to-purple-900 p-4 rounded mb-4 border-2 border-blue-500">
+              <h2 className="font-bold mb-3 text-yellow-300">📖 ゲームの流れ</h2>
+              <ol className="space-y-2 text-sm text-gray-200">
+                <li className="flex gap-2">
+                  <span className="font-bold text-yellow-300">1.</span>
+                  <span>全員に二軸が表示されます（<span className="text-red-400 font-bold">人狼だけ異なる軸</span>）</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-yellow-300">2.</span>
+                  <span>カードを軸上に配置しながら議論します</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-yellow-300">3.</span>
+                  <span>誰が人狼かを推理して投票します</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="font-bold text-yellow-300">4.</span>
+                  <span>結果発表！人狼を当てられればスコアゲット</span>
+                </li>
+              </ol>
+              <button
+                onClick={() => setShowRules(true)}
+                className="mt-3 w-full py-2 bg-white text-purple-700 rounded font-bold hover:bg-gray-100 transition-colors"
+              >
+                詳しいルールを見る →
+              </button>
             </div>
           </>
         )}
@@ -715,6 +752,9 @@ export default function OnlineGame() {
           </div>
         )}
       </div>
+
+      {/* ゲームルールポップアップ */}
+      <GameRules isOpen={showRules} onClose={() => setShowRules(false)} />
     </div>
   );
 }

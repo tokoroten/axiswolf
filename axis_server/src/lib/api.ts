@@ -66,7 +66,12 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ room_code: roomCode, player_id: playerId, player_name: playerName }),
     });
-    if (!res.ok) throw new Error('Failed to join room');
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      const error: any = new Error(errorData.detail || 'Failed to join room');
+      error.response = { status: res.status };
+      throw error;
+    }
     return res.json();
   },
 

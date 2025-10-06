@@ -154,12 +154,21 @@ async def join_room(req: JoinRoomRequest):
     if req.room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
+    room = rooms[req.room_code]
+
     # 既存プレイヤー確認
     room_players = players.get(req.room_code, [])
     existing = next((p for p in room_players if p["player_id"] == req.player_id), None)
 
     if existing:
         return {"success": True, "player_slot": existing["player_slot"]}
+
+    # ゲーム開始後の新規参加を防ぐ
+    if room["phase"] != "lobby":
+        raise HTTPException(
+            status_code=403,
+            detail="Cannot join room after game has started. Please wait for the next round."
+        )
 
     # 次のスロット番号取得
     max_slot = max((p["player_slot"] for p in room_players), default=-1)

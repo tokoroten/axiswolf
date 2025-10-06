@@ -60,9 +60,17 @@ export default function OnlineHome() {
     try {
       await joinRoom(roomCode, playerId, playerName);
       navigate(`/online/${roomCode}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to join room:', error);
-      alert('ルーム参加に失敗しました');
+
+      // ゲーム開始後の参加エラーを特別に処理
+      if (error?.message?.includes('after game has started') || error?.response?.status === 403) {
+        alert('このルームはゲームが既に開始されています。\n次のラウンドまでお待ちください。');
+      } else if (error?.response?.status === 404) {
+        alert('ルームが見つかりません。\nルームコードを確認してください。');
+      } else {
+        alert('ルーム参加に失敗しました');
+      }
     }
   };
 

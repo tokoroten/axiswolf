@@ -70,60 +70,110 @@ export function GameProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!room) return;
 
-    const websocket = api.connectWebSocket(room.room_code);
-    setWs(websocket);
+    let websocket: WebSocket | null = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 2000; // 2秒
 
-    websocket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
+    const connect = () => {
+      websocket = api.connectWebSocket(room.room_code);
+      setWs(websocket);
 
-      switch (message.type) {
-        case 'player_joined':
-          api.getRoom(room.room_code).then(({ players: newPlayers }) => {
-            setPlayers(newPlayers);
-          });
-          break;
+      websocket.onopen = () => {
+        console.log('[GameContext] WebSocket接続しました');
+        reconnectAttempts = 0; // 成功したらリセット
+      };
 
-        case 'phase_changed':
-          // フェーズが変更されたら、サーバーから最新のルーム情報を取得
-          // (軸データやシード値が更新されている可能性があるため)
-          api.getRoom(room.room_code).then(({ room: updatedRoom }) => {
-            setRoom(updatedRoom);
-          });
-          break;
+      websocket.onmessage = (event) => {
+        const message = JSON.parse(event.data);
 
-        case 'card_placed':
-          setPlacedCards(prev => [
-            ...prev.filter(c => !(c.player_slot === message.player_slot && c.card_id === message.card_id)),
-            {
-              room_code: room.room_code,
-              round: room.active_round,
-              player_slot: message.player_slot,
-              card_id: message.card_id,
-              quadrant: message.quadrant,
-              offsets: message.offsets,
-              locked: 0,
-              placed_at: new Date().toISOString(),
-            },
-          ]);
-          break;
+        switch (message.type) {
+          case 'player_joined':
+            api.getRoom(room.room_code).then(({ players: newPlayers }) => {
+              setPlayers(newPlayers);
+            });
+            break;
 
-        case 'vote_submitted':
-          break;
+          case 'player_left':
+            console.log('[GameContext] プレイヤーが退出しました:', message.player_name);
+            api.getRoom(room.room_code).then(({ players: newPlayers }) => {
+              setPlayers(newPlayers);
+            });
+            break;
 
-        case 'round_started':
-          // 新しいラウンドが始まったらルーム情報を再取得
-          api.getRoom(room.room_code).then(({ room: newRoom }) => {
-            setRoom(newRoom);
-          });
-          // カードと投票をクリア
-          setPlacedCards([]);
-          setVotes([]);
-          break;
-      }
+          case 'phase_changed':
+            // フェーズが変更されたら、サーバーから最新のルーム情報を取得
+            // (軸データやシード値が更新されている可能性があるため)
+            api.getRoom(room.room_code).then(({ room: updatedRoom }) => {
+              setRoom(updatedRoom);
+            });
+            break;
+
+          case 'card_placed':
+            setPlacedCards(prev => [
+              ...prev.filter(c => !(c.player_slot === message.player_slot && c.card_id === message.card_id)),
+              {
+                room_code: room.room_code,
+                round: room.active_round,
+                player_slot: message.player_slot,
+                card_id: message.card_id,
+                quadrant: message.quadrant,
+                offsets: message.offsets,
+                locked: 0,
+                placed_at: new Date().toISOString(),
+              },
+            ]);
+            break;
+
+          case 'vote_submitted':
+            break;
+
+          case 'round_started':
+            // 新しいラウンドが始まったらルーム情報を再取得
+            api.getRoom(room.room_code).then(({ room: newRoom }) => {
+              setRoom(newRoom);
+            });
+            // カードと投票をクリア
+            setPlacedCards([]);
+            setVotes([]);
+            break;
+        }
+      };
+
+      websocket.onclose = (event) => {
+        console.log('[GameContext] WebSocket接続が切断されました', event);
+
+        // 正常なクローズ（コード1000）または意図的なクローズの場合は再接続しない
+        if (event.code === 1000 || event.wasClean) {
+          console.log('[GameContext] 正常なクローズのため再接続しません');
+          return;
+        }
+
+        // 再接続を試みる
+        if (reconnectAttempts < maxReconnectAttempts) {
+          reconnectAttempts++;
+          console.log(`[GameContext] ${reconnectDelay}ms後に再接続を試みます (試行回数: ${reconnectAttempts}/${maxReconnectAttempts})`);
+          setTimeout(() => {
+            connect();
+          }, reconnectDelay);
+        } else {
+          console.error('[GameContext] 再接続の最大試行回数に達しました');
+          alert('サーバーとの接続が切断されました。ページを再読み込みしてください。');
+        }
+      };
+
+      websocket.onerror = (error) => {
+        console.error('[GameContext] WebSocketエラー:', error);
+      };
     };
 
+    connect();
+
     return () => {
-      websocket.close();
+      if (websocket) {
+        // クリーンアップ時は正常なクローズとしてマーク
+        websocket.close(1000, 'Component unmounted');
+      }
     };
   }, [room]);
 

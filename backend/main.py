@@ -189,6 +189,48 @@ async def join_room(req: JoinRoomRequest):
 
     return {"success": True, "player_slot": next_slot}
 
+# プレイヤー退出
+@app.post("/api/rooms/{room_code}/leave")
+async def leave_room(room_code: str, player_id: str):
+    if room_code not in rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    room_players = players.get(room_code, [])
+    player = next((p for p in room_players if p["player_id"] == player_id), None)
+
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    player_slot = player["player_slot"]
+    player_name = player["player_name"]
+
+    # プレイヤーをリストから削除
+    players[room_code] = [p for p in room_players if p["player_id"] != player_id]
+
+    # そのプレイヤーのカードと投票を削除
+    if room_code in cards:
+        cards[room_code] = [c for c in cards[room_code] if c["player_slot"] != player_slot]
+    if room_code in votes:
+        votes[room_code] = [v for v in votes[room_code] if v["voter_slot"] != player_slot]
+
+    # 他のプレイヤーに通知
+    await manager.broadcast(room_code, {
+        "type": "player_left",
+        "player_slot": player_slot,
+        "player_name": player_name
+    })
+
+    # ルームが空になったら削除
+    if len(players[room_code]) == 0:
+        del rooms[room_code]
+        del players[room_code]
+        if room_code in cards:
+            del cards[room_code]
+        if room_code in votes:
+            del votes[room_code]
+
+    return {"success": True}
+
 # ルーム情報取得
 @app.get("/api/rooms/{room_code}")
 async def get_room(room_code: str):

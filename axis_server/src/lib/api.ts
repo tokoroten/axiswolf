@@ -97,6 +97,14 @@ export const api = {
     return res.json();
   },
 
+  async leaveRoom(roomCode: string, playerId: string) {
+    const res = await fetch(`${API_BASE}/rooms/${roomCode}/leave?player_id=${playerId}`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Failed to leave room');
+    return res.json();
+  },
+
   async placeCard(
     roomCode: string,
     playerId: string,

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { getPlayerColorStyle } from '../utils/playerColors';
 import GameBoard from '../components/GameBoard';
+import { api } from '../lib/api';
 
 export default function OnlineGame() {
   const { roomCode } = useParams<{ roomCode: string }>();
@@ -31,6 +32,37 @@ export default function OnlineGame() {
       navigate('/online');
     }
   }, [roomCode, navigate]);
+
+  // プレイヤー退出処理
+  const handleLeaveRoom = async () => {
+    if (!roomCode) return;
+
+    const savedPlayerId = localStorage.getItem('online_player_id');
+    if (savedPlayerId) {
+      try {
+        await api.leaveRoom(roomCode, savedPlayerId);
+      } catch (error) {
+        console.error('[OnlineGame] Failed to leave room:', error);
+      }
+    }
+
+    // LocalStorageをクリア
+    localStorage.removeItem('online_room_code');
+    localStorage.removeItem('online_player_id');
+    localStorage.removeItem('online_player_name');
+  };
+
+  // ブラウザを閉じる/タブを閉じるときに退出処理
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      handleLeaveRoom();
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [roomCode]);
 
   // 既に参加済みかチェック
   const isJoined = playerSlot !== null && room !== null;
@@ -222,6 +254,17 @@ export default function OnlineGame() {
                 )}
               </div>
             )}
+            <button
+              onClick={async () => {
+                if (confirm('ルームから退出しますか？')) {
+                  await handleLeaveRoom();
+                  navigate('/online');
+                }
+              }}
+              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded text-sm font-medium transition-colors"
+            >
+              退出
+            </button>
           </div>
         </div>
 

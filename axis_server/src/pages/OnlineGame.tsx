@@ -388,44 +388,23 @@ export default function OnlineGame() {
           </>
         )}
 
-        {room.phase === 'placement' && myHand.length > 0 && (
-          <div className="bg-gray-800 p-4 rounded mb-4">
-            <h2 className="font-bold mb-2">手札（ドラッグ&ドロップで配置）</h2>
-            <div className="flex gap-2 flex-wrap">
-              {myHand.map((card) => {
-                const isPlaced = placedCards.some(c => c.card_id === card && c.player_slot === playerSlot);
-                return (
-                  <div
-                    key={card}
-                    draggable={room.phase === 'placement' && !isPlaced}
-                    onDragStart={() => room.phase === 'placement' && !isPlaced && handleDragStart(card, false)}
-                    onClick={() => room.phase === 'placement' && !isPlaced && setSelectedCard(card)}
-                    className={`px-4 py-2 rounded font-medium transition-all ${
-                      room.phase === 'placement' && !isPlaced
-                        ? 'cursor-move ' + (selectedCard === card ? 'bg-blue-600 scale-105 shadow-lg' : 'bg-gray-700 hover:bg-gray-600')
-                        : isPlaced
-                          ? 'bg-gray-600 opacity-50 cursor-default'
-                          : 'bg-gray-700 cursor-default'
-                    }`}
-                  >
-                    {card}
-                  </div>
-                );
-              })}
-            </div>
-            {selectedCard && room.phase === 'placement' && (
-              <div className="mt-2 text-sm text-blue-400">
-                選択中: {selectedCard} - ドラッグ or クリックで配置
-              </div>
-            )}
-          </div>
-        )}
-
         {room.phase === 'placement' && (
           <>
             {/* プレイヤー進行状況 */}
             <div className="bg-gray-800 p-4 rounded mb-4">
-              <h3 className="font-bold mb-3">プレイヤー進行状況</h3>
+              <div className="flex items-center gap-4 mb-3">
+                {isHost && (
+                  <button
+                    onClick={async () => {
+                      await updatePhase('voting');
+                    }}
+                    className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-bold whitespace-nowrap"
+                  >
+                    投票フェーズへ進む
+                  </button>
+                )}
+                <h3 className="font-bold">プレイヤー進行状況</h3>
+              </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {players.map((player) => {
                   const cardCount = placedCards.filter(c => c.player_slot === player.player_slot).length;
@@ -450,15 +429,37 @@ export default function OnlineGame() {
               </div>
             </div>
 
-            {isHost && (
-              <button
-                onClick={async () => {
-                  await updatePhase('voting');
-                }}
-                className="mb-4 px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded"
-              >
-                投票フェーズへ進む
-              </button>
+            {myHand.length > 0 && (
+              <div className="bg-gray-800 p-4 rounded mb-4">
+                <h2 className="font-bold mb-2">手札（ドラッグ&ドロップで配置）</h2>
+                <div className="flex gap-2 flex-wrap">
+                  {myHand.map((card) => {
+                    const isPlaced = placedCards.some(c => c.card_id === card && c.player_slot === playerSlot);
+                    return (
+                      <div
+                        key={card}
+                        draggable={room.phase === 'placement' && !isPlaced}
+                        onDragStart={() => room.phase === 'placement' && !isPlaced && handleDragStart(card, false)}
+                        onClick={() => room.phase === 'placement' && !isPlaced && setSelectedCard(card)}
+                        className={`px-4 py-2 rounded font-medium transition-all ${
+                          room.phase === 'placement' && !isPlaced
+                            ? 'cursor-move ' + (selectedCard === card ? 'bg-blue-600 scale-105 shadow-lg' : 'bg-gray-700 hover:bg-gray-600')
+                            : isPlaced
+                              ? 'bg-gray-600 opacity-50 cursor-default'
+                              : 'bg-gray-700 cursor-default'
+                        }`}
+                      >
+                        {card}
+                      </div>
+                    );
+                  })}
+                </div>
+                {selectedCard && room.phase === 'placement' && (
+                  <div className="mt-2 text-sm text-blue-400">
+                    選択中: {selectedCard} - ドラッグ or クリックで配置
+                  </div>
+                )}
+              </div>
             )}
 
             {myAxis && (

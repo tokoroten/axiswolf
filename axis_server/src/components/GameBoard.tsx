@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { PlacedCard, Player } from '../lib/api';
 import { getPlayerColorStyle } from '../utils/playerColors';
 
@@ -31,6 +32,8 @@ interface GameBoardProps {
   roomPhase?: string;
 }
 
+const STORAGE_KEY = 'gameboard_zoom_size';
+
 export default function GameBoard({
   axis,
   wolfAxis,
@@ -44,6 +47,28 @@ export default function GameBoard({
   currentPlayerSlot,
   roomPhase,
 }: GameBoardProps) {
+  // localStorageから初期値を読み込む
+  const [size, setSize] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved ? parseInt(saved, 10) : 100;
+  });
+
+  // サイズが変更されたらlocalStorageに保存
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, size.toString());
+  }, [size]);
+
+  const handleZoomIn = () => {
+    setSize(prev => Math.min(prev + 5, 200));
+  };
+
+  const handleZoomOut = () => {
+    setSize(prev => Math.max(prev - 5, 50));
+  };
+
+  const handleZoomReset = () => {
+    setSize(100);
+  };
   // 軸ラベルの取得（新形式または旧形式）
   const getAxisLabel = (axisData: Axis, type: 'vertical-negative' | 'vertical-positive' | 'horizontal-negative' | 'horizontal-positive') => {
     switch (type) {
@@ -59,14 +84,44 @@ export default function GameBoard({
   };
 
   return (
-    <div
-      onClick={interactive ? onBoardClick : undefined}
-      onDragOver={interactive ? onDragOver : undefined}
-      onDrop={interactive ? onDrop : undefined}
-      className={`relative w-full aspect-square bg-white rounded-xl shadow-xl ${
-        interactive ? 'cursor-crosshair' : ''
-      }`}
-    >
+    <div className="relative w-full">
+      {/* ズームコントロール */}
+      <div className="absolute top-2 right-2 z-30 flex gap-2 bg-white rounded-lg shadow-lg p-2">
+        <button
+          onClick={handleZoomOut}
+          className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-lg"
+          title="縮小"
+        >
+          −
+        </button>
+        <button
+          onClick={handleZoomReset}
+          className="w-8 h-8 flex items-center justify-center bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+          title="リセット"
+        >
+          ◯
+        </button>
+        <button
+          onClick={handleZoomIn}
+          className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-lg"
+          title="拡大"
+        >
+          +
+        </button>
+      </div>
+
+      <div
+        onClick={interactive ? onBoardClick : undefined}
+        onDragOver={interactive ? onDragOver : undefined}
+        onDrop={interactive ? onDrop : undefined}
+        className={`relative bg-white rounded-xl shadow-xl ${
+          interactive ? 'cursor-crosshair' : ''
+        }`}
+        style={{
+          width: `${size}%`,
+          aspectRatio: '1',
+        }}
+      >
       {/* SVGで四象限の背景 */}
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
         {/* 上の三角形 (A) */}
@@ -187,6 +242,7 @@ export default function GameBoard({
           </div>
         );
       })}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
@@ -7,6 +8,8 @@ import random
 import asyncio
 import json
 import secrets
+import os
+from pathlib import Path
 from axis_data import generate_axis_pair, generate_wolf_axis_pair
 
 app = FastAPI()
@@ -183,6 +186,11 @@ class PlaceCardRequest(BaseModel):
 
 class SubmitVoteRequest(BaseModel):
     target_slot: int
+
+# ヘルスチェック
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "rooms": len(rooms), "players": sum(len(p) for p in players.values())}
 
 # ルーム作成
 @app.post("/api/rooms/create")
@@ -751,6 +759,13 @@ async def periodic_cleanup():
         await asyncio.sleep(86400)  # 24時間 = 86400秒
         cleanup_old_rooms()
         print("[CLEANUP] Periodic cleanup completed")
+
+# 静的ファイル配信（本番環境用）
+# 開発環境では存在しないので、存在する場合のみマウント
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+    print(f"[STATIC] Serving static files from {static_dir}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,5 +1,21 @@
-const API_BASE = 'http://localhost:8000/api';
-const WS_BASE = 'ws://localhost:8000/ws';
+// 環境変数から取得、デフォルトは開発環境用
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
+const WS_BASE = import.meta.env.VITE_WS_BASE || 'ws://localhost:8000/ws';
+
+// 本番環境では相対パスを使用（同一オリジン）
+const getApiBase = () => {
+  if (API_BASE === '') return '/api';
+  return API_BASE;
+};
+
+const getWsBase = () => {
+  if (WS_BASE === '') {
+    // 本番環境: 同一オリジンのWebSocket
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${protocol}//${window.location.host}/ws`;
+  }
+  return WS_BASE;
+};
 
 export interface Room {
   room_code: string;

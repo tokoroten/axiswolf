@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { PlacedCard, Player } from '../lib/api';
 import { getPlayerColorStyle } from '../utils/playerColors';
 
@@ -45,19 +44,6 @@ export default function GameBoard({
   currentPlayerSlot,
   roomPhase,
 }: GameBoardProps) {
-  const [zoom, setZoom] = useState(1);
-
-  const handleZoomIn = () => {
-    setZoom(prev => Math.min(prev + 0.2, 2));
-  };
-
-  const handleZoomOut = () => {
-    setZoom(prev => Math.max(prev - 0.2, 0.6));
-  };
-
-  const handleZoomReset = () => {
-    setZoom(1);
-  };
   // 軸ラベルの取得（新形式または旧形式）
   const getAxisLabel = (axisData: Axis, type: 'vertical-negative' | 'vertical-positive' | 'horizontal-negative' | 'horizontal-positive') => {
     switch (type) {
@@ -73,50 +59,14 @@ export default function GameBoard({
   };
 
   return (
-    <div className="relative w-full">
-      {/* ズームコントロール */}
-      <div className="absolute top-2 right-2 z-30 flex flex-col gap-1 bg-white rounded-lg shadow-lg p-1">
-        <button
-          onClick={handleZoomIn}
-          className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-lg"
-          title="拡大"
-        >
-          +
-        </button>
-        <button
-          onClick={handleZoomReset}
-          className="w-8 h-8 flex items-center justify-center bg-gray-500 text-white rounded hover:bg-gray-600 text-xs"
-          title="リセット"
-        >
-          1x
-        </button>
-        <button
-          onClick={handleZoomOut}
-          className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-lg"
-          title="縮小"
-        >
-          −
-        </button>
-      </div>
-
-      {/* ボード本体（スクロール可能） */}
-      <div className="w-full aspect-square overflow-auto rounded-xl shadow-xl">
-        <div
-          style={{
-            transform: `scale(${zoom})`,
-            transformOrigin: 'top left',
-            width: `${100 / zoom}%`,
-            height: `${100 / zoom}%`,
-          }}
-        >
-          <div
-            onClick={interactive ? onBoardClick : undefined}
-            onDragOver={interactive ? onDragOver : undefined}
-            onDrop={interactive ? onDrop : undefined}
-            className={`relative w-full h-full bg-white ${
-              interactive ? 'cursor-crosshair' : ''
-            }`}
-          >
+    <div
+      onClick={interactive ? onBoardClick : undefined}
+      onDragOver={interactive ? onDragOver : undefined}
+      onDrop={interactive ? onDrop : undefined}
+      className={`relative w-full aspect-square bg-white rounded-xl shadow-xl ${
+        interactive ? 'cursor-crosshair' : ''
+      }`}
+    >
       {/* SVGで四象限の背景 */}
       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
         {/* 上の三角形 (A) */}
@@ -237,9 +187,6 @@ export default function GameBoard({
           </div>
         );
       })}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

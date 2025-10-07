@@ -116,6 +116,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 5;
     const reconnectDelay = 2000; // 2秒
+    let pingInterval: NodeJS.Timeout | null = null;
 
     const connect = () => {
       // 初回接続のみ過去ログをロード
@@ -127,6 +128,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
         console.log('[GameContext] WebSocket接続しました');
         reconnectAttempts = 0; // 成功したらリセット
         isFirstConnection.current = false; // 初回接続完了
+
+        // 3分ごとにpingを送信してサーバーをアクティブに保つ
+        pingInterval = setInterval(() => {
+          if (websocket && websocket.readyState === WebSocket.OPEN) {
+            console.log('[GameContext] Pingを送信');
+            websocket.send(JSON.stringify({ type: 'ping' }));
+          }
+        }, 3 * 60 * 1000); // 3分 = 180,000ミリ秒
       };
 
       websocket.onmessage = (event) => {
@@ -201,6 +210,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       websocket.onclose = (event) => {
         console.log('[GameContext] WebSocket接続が切断されました', event);
 
+        // pingタイマーをクリア
+        if (pingInterval) {
+          clearInterval(pingInterval);
+          pingInterval = null;
+        }
+
         // 正常なクローズ（コード1000）または意図的なクローズの場合は再接続しない
         if (event.code === 1000 || event.wasClean) {
           console.log('[GameContext] 正常なクローズのため再接続しません');
@@ -228,6 +243,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
     connect();
 
     return () => {
+      // pingタイマーをクリア
+      if (pingInterval) {
+        clearInterval(pingInterval);
+      }
+
       if (websocket) {
         // クリーンアップ時は正常なクローズとしてマーク
         websocket.close(1000, 'Component unmounted');

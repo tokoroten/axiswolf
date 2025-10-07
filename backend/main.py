@@ -729,8 +729,12 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_id: Op
                     # ブロードキャスト
                     await manager.broadcast(room_code, message)
                     print(f"[WebSocket] ブロードキャスト完了")
+                elif message_type == "ping":
+                    # pingメッセージを受信したらpongを返す
+                    print(f"[WebSocket] Ping受信: room={room_code}, player_id={player_id}")
+                    await websocket.send_text(json.dumps({"type": "pong"}))
                 else:
-                    print(f"[WebSocket] チャット以外のメッセージタイプ: {message_type}")
+                    print(f"[WebSocket] その他のメッセージタイプ: {message_type}")
             except json.JSONDecodeError as e:
                 print(f"[WebSocket] JSON解析エラー: {data}, error: {e}")
             except Exception as e:

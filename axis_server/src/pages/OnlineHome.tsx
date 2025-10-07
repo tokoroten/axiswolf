@@ -200,7 +200,7 @@ export default function OnlineHome() {
                     value={roomCode}
                     onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                     placeholder="例: ABCD1234"
-                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg font-mono"
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg font-mono text-gray-900"
                     maxLength={10}
                     minLength={4}
                   />
@@ -224,7 +224,7 @@ export default function OnlineHome() {
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="名前を入力"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg text-gray-900"
                 />
               </div>
 
@@ -250,7 +250,7 @@ export default function OnlineHome() {
                   value={roomCode}
                   onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
                   placeholder="例: ABCD1234"
-                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg font-mono ${
+                  className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none text-lg font-mono text-gray-900 ${
                     searchParams.get('room')
                       ? 'border-green-400 bg-green-50 focus:border-green-500'
                       : 'border-gray-200 focus:border-blue-500'
@@ -268,7 +268,7 @@ export default function OnlineHome() {
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder="名前を入力"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-lg"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none text-lg text-gray-900"
                 />
               </div>
 

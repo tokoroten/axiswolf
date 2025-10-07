@@ -1,6 +1,11 @@
 // 環境変数から取得、デフォルトは開発環境用
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/api';
-const WS_BASE = import.meta.env.VITE_WS_BASE || 'ws://localhost:8000/ws';
+// 空文字列が明示的に設定されている場合は本番環境（相対パス使用）
+const API_BASE = import.meta.env.VITE_API_BASE !== undefined
+  ? import.meta.env.VITE_API_BASE
+  : 'http://localhost:8000/api';
+const WS_BASE = import.meta.env.VITE_WS_BASE !== undefined
+  ? import.meta.env.VITE_WS_BASE
+  : 'ws://localhost:8000/ws';
 
 // 本番環境では相対パスを使用（同一オリジン）
 const getApiBase = () => {

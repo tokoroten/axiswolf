@@ -71,3 +71,6 @@ desktop.ini
 
 # Local VSCode settings
 .vscode/settings.json
+
+# Claude Code settings
+.claude/settings.local.json

@@ -51,6 +51,14 @@ export interface Vote {
 }
 
 export const api = {
+  async verifyToken(playerId: string, token: string) {
+    const res = await fetch(`${API_BASE}/auth/verify?player_id=${playerId}&token=${token}`, {
+      method: 'POST',
+    });
+    if (!res.ok) return false;
+    return true;
+  },
+
   async createRoom(roomCode: string, playerId: string, playerName: string) {
     const res = await fetch(`${API_BASE}/rooms/create`, {
       method: 'POST',
@@ -180,10 +188,16 @@ export const api = {
     return res.json();
   },
 
-  connectWebSocket(roomCode: string, playerId?: string): WebSocket {
-    const url = playerId
-      ? `${WS_BASE}/${roomCode}?player_id=${playerId}`
-      : `${WS_BASE}/${roomCode}`;
+  connectWebSocket(roomCode: string, playerId?: string, loadHistory: boolean = true): WebSocket {
+    let url = `${WS_BASE}/${roomCode}`;
+    const params = new URLSearchParams();
+
+    if (playerId) {
+      params.append('player_id', playerId);
+    }
+    params.append('load_history', loadHistory.toString());
+
+    url += `?${params.toString()}`;
     return new WebSocket(url);
   },
 };

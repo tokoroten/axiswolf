@@ -5,12 +5,14 @@ import { getPlayerColorStyle } from '../utils/playerColors';
 import GameBoard from '../components/GameBoard';
 import GameRules from '../components/GameRules';
 import PlayerAvatar from '../components/PlayerAvatar';
+import ChatPanel from '../components/ChatPanel';
 import { api } from '../lib/api';
+import QRCode from 'qrcode';
 
 export default function OnlineGame() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
-  const { room, players, placedCards, votes, isHost, playerSlot, updatePhase, placeCard, submitVote, fetchVotes, fetchHand, calculateResults, startNextRound } = useGame();
+  const { room, players, placedCards, votes, isHost, playerSlot, playerId, ws, updatePhase, placeCard, submitVote, fetchVotes, fetchHand, calculateResults, startNextRound } = useGame();
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [myAxis, setMyAxis] = useState<any>(null);
   const [myHand, setMyHand] = useState<string[]>([]);
@@ -29,6 +31,8 @@ export default function OnlineGame() {
     normal_axis: any;
   } | null>(null);
   const [showRules, setShowRules] = useState(false);
+  const [isChatCollapsed, setIsChatCollapsed] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   // roomCodeがない場合、LocalStorageから復元を試みる
   useEffect(() => {
@@ -43,6 +47,27 @@ export default function OnlineGame() {
       }
     }
   }, [roomCode, navigate]);
+
+  // QRコード生成
+  useEffect(() => {
+    if (roomCode) {
+      const inviteUrl = `${window.location.origin}/online?room=${roomCode}`;
+      QRCode.toDataURL(inviteUrl, {
+        width: 200,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
+      })
+        .then((url) => {
+          setQrCodeUrl(url);
+        })
+        .catch((err) => {
+          console.error('[QRCode] 生成エラー:', err);
+        });
+    }
+  }, [roomCode]);
 
   // プレイヤー退出処理
   const handleLeaveRoom = async () => {
@@ -222,7 +247,7 @@ export default function OnlineGame() {
   const myPlayer = players.find(p => p.player_slot === playerSlot);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4">
+    <div className="min-h-screen bg-gray-900 text-white p-4" style={{ paddingRight: isChatCollapsed ? '1rem' : 'calc(20rem + 1rem)' }}>
       <div className="max-w-6xl mx-auto">
         {/* ヘッダー */}
         <div className="flex justify-between items-center mb-4">
@@ -295,24 +320,40 @@ export default function OnlineGame() {
             {/* インバイトリンク */}
             <div className="bg-gradient-to-r from-purple-900 to-blue-900 p-4 rounded mb-4 border-2 border-purple-500">
               <h2 className="font-bold mb-2 text-yellow-300">🔗 プレイヤーを招待</h2>
-              <p className="text-sm text-gray-300 mb-3">このリンクを共有してプレイヤーを招待しましょう</p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={`${window.location.origin}/online?room=${roomCode}`}
-                  className="flex-1 px-3 py-2 bg-gray-800 text-white rounded font-mono text-sm border border-gray-600"
-                  onClick={(e) => e.currentTarget.select()}
-                />
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/online?room=${roomCode}`);
-                    alert('リンクをコピーしました！');
-                  }}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium whitespace-nowrap transition-colors"
-                >
-                  📋 コピー
-                </button>
+              <p className="text-sm text-gray-300 mb-3">このリンクやQRコードを共有してプレイヤーを招待しましょう</p>
+
+              <div className="flex gap-4 items-start">
+                {/* QRコード */}
+                {qrCodeUrl && (
+                  <div className="bg-white p-3 rounded-lg">
+                    <img src={qrCodeUrl} alt="招待用QRコード" className="w-40 h-40" />
+                  </div>
+                )}
+
+                {/* リンク */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={`${window.location.origin}/online?room=${roomCode}`}
+                      className="flex-1 px-3 py-2 bg-gray-800 text-white rounded font-mono text-sm border border-gray-600"
+                      onClick={(e) => e.currentTarget.select()}
+                    />
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/online?room=${roomCode}`);
+                        alert('リンクをコピーしました！');
+                      }}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-medium whitespace-nowrap transition-colors"
+                    >
+                      📋 コピー
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    スマートフォンでQRコードを読み取るか、リンクを共有してください
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -730,6 +771,15 @@ export default function OnlineGame() {
 
       {/* ゲームルールポップアップ */}
       <GameRules isOpen={showRules} onClose={() => setShowRules(false)} />
+
+      {/* チャットパネル */}
+      <ChatPanel
+        players={players}
+        currentPlayerId={playerId}
+        ws={ws}
+        isCollapsed={isChatCollapsed}
+        onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
+      />
     </div>
   );
 }

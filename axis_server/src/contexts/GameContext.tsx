@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { api, type Room, type Player, type PlacedCard, type Vote } from '../lib/api';
 
@@ -9,6 +9,8 @@ interface GameContextType {
   placedCards: PlacedCard[];
   votes: Vote[];
   playerSlot: number | null;
+  playerId: string;
+  ws: WebSocket | null;
   isHost: boolean;
   joinRoom: (roomCode: string, playerId: string, playerName: string) => Promise<void>;
   createRoom: (roomCode: string, playerId: string, playerName: string) => Promise<void>;
@@ -39,7 +41,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const [votes, setVotes] = useState<Vote[]>([]);
   const [playerSlot, setPlayerSlot] = useState<number | null>(null);
   const [playerId, setPlayerId] = useState<string>('');
-  const [, setWs] = useState<WebSocket | null>(null);
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
+  // WebSocket初回接続フラグ（セッション全体で1回のみtrue）
+  const isFirstConnection = useRef(true);
 
   const isHost = players.find(p => p.player_slot === playerSlot)?.is_host === 1;
 
@@ -48,6 +53,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const savedRoomCode = localStorage.getItem('online_room_code');
     const savedPlayerId = localStorage.getItem('online_player_id');
     const savedPlayerName = localStorage.getItem('online_player_name');
+    const savedToken = localStorage.getItem('online_player_token');
 
     // 現在のURLパスを確認
     const currentPath = window.location.pathname;
@@ -65,12 +71,33 @@ export function GameProvider({ children }: { children: ReactNode }) {
         // 再接続を試みる（直接APIを呼ぶ）
         (async () => {
           try {
-            const { player_slot } = await api.joinRoom(savedRoomCode, savedPlayerId, savedPlayerName);
+            // トークンが存在する場合は検証
+            if (savedToken) {
+              const isValid = await api.verifyToken(savedPlayerId, savedToken);
+              if (!isValid) {
+                console.error('[GameContext] トークン検証失敗。再ログインが必要です。');
+                // トークンが無効なので、LocalStorageをクリア
+                localStorage.removeItem('online_room_code');
+                localStorage.removeItem('online_player_id');
+                localStorage.removeItem('online_player_name');
+                localStorage.removeItem('online_player_token');
+                return;
+              }
+              console.log('[GameContext] トークン検証成功');
+            }
+
+            const { player_slot, token } = await api.joinRoom(savedRoomCode, savedPlayerId, savedPlayerName);
             const { room: newRoom, players: newPlayers } = await api.getRoom(savedRoomCode);
             setRoom(newRoom);
             setPlayers(newPlayers);
             setPlayerSlot(player_slot);
             setPlayerId(savedPlayerId);
+
+            // 新しいトークンを保存（既存プレイヤーでも更新される可能性がある）
+            if (token) {
+              localStorage.setItem('online_player_token', token);
+            }
+
             console.log('[GameContext] 再接続に成功しました');
           } catch (err) {
             console.error('[GameContext] 再接続に失敗しました:', err);
@@ -91,18 +118,26 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const reconnectDelay = 2000; // 2秒
 
     const connect = () => {
-      websocket = api.connectWebSocket(room.room_code, playerId);
+      // 初回接続のみ過去ログをロード
+      const loadHistory = isFirstConnection.current;
+      websocket = api.connectWebSocket(room.room_code, playerId, loadHistory);
       setWs(websocket);
 
       websocket.onopen = () => {
         console.log('[GameContext] WebSocket接続しました');
         reconnectAttempts = 0; // 成功したらリセット
+        isFirstConnection.current = false; // 初回接続完了
       };
 
       websocket.onmessage = (event) => {
         const message = JSON.parse(event.data);
 
         switch (message.type) {
+          case 'chat':
+            // チャットメッセージをカスタムイベントとして再発火
+            window.dispatchEvent(new CustomEvent('chat-message', { detail: message }));
+            break;
+
           case 'player_joined':
             api.getRoom(room.room_code).then(({ players: newPlayers }) => {
               setPlayers(newPlayers);
@@ -198,10 +233,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
         websocket.close(1000, 'Component unmounted');
       }
     };
-  }, [room, playerId]);
+  }, [room?.room_code, playerId]);
 
   const joinRoom = async (roomCode: string, pid: string, playerName: string) => {
-    const { player_slot } = await api.joinRoom(roomCode, pid, playerName);
+    const { player_slot, token } = await api.joinRoom(roomCode, pid, playerName);
     const { room: newRoom, players: newPlayers } = await api.getRoom(roomCode);
     setRoom(newRoom);
     setPlayers(newPlayers);
@@ -212,11 +247,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('online_room_code', roomCode);
     localStorage.setItem('online_player_id', pid);
     localStorage.setItem('online_player_name', playerName);
+    localStorage.setItem('online_player_token', token);
     console.log('[GameContext] 接続情報をLocalStorageに保存しました');
   };
 
   const createRoom = async (roomCode: string, pid: string, playerName: string) => {
-    await api.createRoom(roomCode, pid, playerName);
+    const { token } = await api.createRoom(roomCode, pid, playerName);
     const { room: newRoom, players: newPlayers } = await api.getRoom(roomCode);
     setRoom(newRoom);
     setPlayers(newPlayers);
@@ -227,6 +263,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('online_room_code', roomCode);
     localStorage.setItem('online_player_id', pid);
     localStorage.setItem('online_player_name', playerName);
+    localStorage.setItem('online_player_token', token);
     console.log('[GameContext] 接続情報をLocalStorageに保存しました');
   };
 
@@ -288,6 +325,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         placedCards,
         votes,
         playerSlot,
+        playerId,
+        ws,
         isHost,
         joinRoom,
         createRoom,

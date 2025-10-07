@@ -1,10 +1,12 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 import random
 import asyncio
+import json
+import secrets
 from axis_data import generate_axis_pair, generate_wolf_axis_pair
 
 app = FastAPI()
@@ -52,11 +54,19 @@ def generate_hand(player_slot: int, round_seed: str, hand_size: int = 5) -> List
     hand = rng.sample(CARD_POOL, min(hand_size, len(CARD_POOL)))
     return hand
 
+def generate_token() -> str:
+    """
+    安全なトークンを生成
+    """
+    return secrets.token_urlsafe(32)
+
 # オンメモリストレージ
 rooms: Dict[str, dict] = {}
 players: Dict[str, List[dict]] = {}
 cards: Dict[str, List[dict]] = {}
 votes: Dict[str, List[dict]] = {}
+chat_messages: Dict[str, List[dict]] = {}  # room_code -> チャットメッセージリスト
+player_tokens: Dict[str, str] = {}  # player_id -> token の対応
 
 # WebSocket接続管理
 class ConnectionManager:
@@ -69,6 +79,23 @@ class ConnectionManager:
 
     async def connect(self, websocket: WebSocket, room_code: str, player_id: str = None):
         await websocket.accept()
+
+        # 同じplayer_idの古い接続があれば削除
+        if player_id and player_id in self.player_connections:
+            old_ws = self.player_connections[player_id]
+            print(f"[ConnectionManager] 同じplayer_idの古い接続を削除: {player_id}")
+            # active_connectionsから削除
+            if room_code in self.active_connections and old_ws in self.active_connections[room_code]:
+                self.active_connections[room_code].remove(old_ws)
+            # 逆引きマップから削除
+            if old_ws in self.websocket_to_player:
+                del self.websocket_to_player[old_ws]
+            # 古い接続をクローズ
+            try:
+                await old_ws.close(1000, "New connection from same player")
+            except:
+                pass
+
         if room_code not in self.active_connections:
             self.active_connections[room_code] = []
         self.active_connections[room_code].append(websocket)
@@ -197,7 +224,11 @@ async def create_room(req: CreateRoomRequest):
     cards[req.room_code] = []
     votes[req.room_code] = []
 
-    return {"success": True, "room_code": req.room_code}
+    # トークンを生成
+    token = generate_token()
+    player_tokens[req.player_id] = token
+
+    return {"success": True, "room_code": req.room_code, "token": token}
 
 # ルーム参加
 @app.post("/api/rooms/join")
@@ -212,7 +243,13 @@ async def join_room(req: JoinRoomRequest):
     existing = next((p for p in room_players if p["player_id"] == req.player_id), None)
 
     if existing:
-        return {"success": True, "player_slot": existing["player_slot"]}
+        # 既存プレイヤーの場合、トークンが既に存在すればそれを返す
+        token = player_tokens.get(req.player_id)
+        if not token:
+            # トークンが存在しない場合は新規生成（後方互換性のため）
+            token = generate_token()
+            player_tokens[req.player_id] = token
+        return {"success": True, "player_slot": existing["player_slot"], "token": token}
 
     # ゲーム開始後の新規参加を防ぐ
     if room["phase"] != "lobby":
@@ -247,7 +284,26 @@ async def join_room(req: JoinRoomRequest):
         "player_name": req.player_name
     })
 
-    return {"success": True, "player_slot": next_slot}
+    # トークンを生成
+    token = generate_token()
+    player_tokens[req.player_id] = token
+
+    return {"success": True, "player_slot": next_slot, "token": token}
+
+# トークン検証
+@app.post("/api/auth/verify")
+async def verify_token(player_id: str, token: str):
+    """
+    player_idとtokenの組み合わせが正しいかを検証
+    """
+    stored_token = player_tokens.get(player_id)
+    if not stored_token:
+        raise HTTPException(status_code=401, detail="Invalid player_id")
+
+    if stored_token != token:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return {"success": True, "player_id": player_id}
 
 # プレイヤー退出
 @app.post("/api/rooms/{room_code}/leave")
@@ -620,10 +676,16 @@ async def get_all_rooms():
 
 # WebSocket接続
 @app.websocket("/ws/{room_code}")
-async def websocket_endpoint(websocket: WebSocket, room_code: str, player_id: Optional[str] = None):
-    print(f"[WebSocket] 接続要求: room={room_code}, player_id={player_id}")
+async def websocket_endpoint(websocket: WebSocket, room_code: str, player_id: Optional[str] = Query(None), load_history: bool = Query(True)):
+    print(f"[WebSocket] 接続要求: room={room_code}, player_id={player_id}, load_history={load_history}")
     await manager.connect(websocket, room_code, player_id)
     print(f"[WebSocket] 接続完了: room={room_code}, player_id={player_id}")
+
+    # 初回接続時のみ過去のチャットメッセージを送信
+    if load_history and room_code in chat_messages:
+        for msg in chat_messages[room_code]:
+            await websocket.send_json(msg)
+        print(f"[WebSocket] {len(chat_messages[room_code])}件の過去メッセージを送信")
 
     # 接続時に他のプレイヤーに通知
     if player_id:
@@ -633,10 +695,38 @@ async def websocket_endpoint(websocket: WebSocket, room_code: str, player_id: Op
         })
         print(f"[WebSocket] player_online ブロードキャスト: {player_id}")
 
+    print(f"[WebSocket] メッセージ受信ループ開始: room={room_code}, player_id={player_id}")
     try:
         while True:
+            print(f"[WebSocket] receive_text()呼び出し待機中...")
             data = await websocket.receive_text()
-            print(f"[WebSocket] メッセージ受信: {data}")
+            print(f"[WebSocket] メッセージ受信成功: {data}")
+
+            # メッセージをパースしてブロードキャスト
+            try:
+                message = json.loads(data)
+                message_type = message.get("type")
+                print(f"[WebSocket] メッセージタイプ: {message_type}")
+
+                # チャットメッセージの場合は保存してブロードキャスト
+                if message_type == "chat":
+                    print(f"[WebSocket] チャットメッセージをブロードキャスト: {message}")
+
+                    # メッセージをストレージに保存
+                    if room_code not in chat_messages:
+                        chat_messages[room_code] = []
+                    chat_messages[room_code].append(message)
+                    print(f"[WebSocket] チャットメッセージを保存: {len(chat_messages[room_code])}件")
+
+                    # ブロードキャスト
+                    await manager.broadcast(room_code, message)
+                    print(f"[WebSocket] ブロードキャスト完了")
+                else:
+                    print(f"[WebSocket] チャット以外のメッセージタイプ: {message_type}")
+            except json.JSONDecodeError as e:
+                print(f"[WebSocket] JSON解析エラー: {data}, error: {e}")
+            except Exception as e:
+                print(f"[WebSocket] メッセージ処理エラー: {e}")
     except WebSocketDisconnect:
         print(f"[WebSocket] 切断: room={room_code}, player_id={player_id}")
         # 切断時に他のプレイヤーに通知

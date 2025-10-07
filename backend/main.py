@@ -764,7 +764,30 @@ async def periodic_cleanup():
 # 開発環境では存在しないので、存在する場合のみマウント
 static_dir = Path(__file__).parent / "static"
 if static_dir.exists():
-    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
+    from fastapi.responses import FileResponse
+
+    # 静的ファイルを配信
+    app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
+
+    # SPAのフォールバック: すべてのルートでindex.htmlを返す
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        # APIルートは除外
+        if full_path.startswith("api/") or full_path.startswith("ws/"):
+            return {"error": "Not found"}
+
+        # 静的ファイルが存在すればそれを返す
+        file_path = static_dir / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+
+        # それ以外はindex.htmlを返す（SPAのルーティング用）
+        index_path = static_dir / "index.html"
+        if index_path.is_file():
+            return FileResponse(index_path)
+
+        return {"error": "Static files not found"}
+
     print(f"[STATIC] Serving static files from {static_dir}")
 
 if __name__ == "__main__":

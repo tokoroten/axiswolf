@@ -68,7 +68,7 @@ export interface Vote {
 
 export const api = {
   async verifyToken(playerId: string, token: string) {
-    const res = await fetch(`${API_BASE}/auth/verify?player_id=${playerId}&token=${token}`, {
+    const res = await fetch(`${getApiBase()}/auth/verify?player_id=${playerId}&token=${token}`, {
       method: 'POST',
     });
     if (!res.ok) return false;
@@ -76,7 +76,7 @@ export const api = {
   },
 
   async createRoom(roomCode: string, playerId: string, playerName: string) {
-    const res = await fetch(`${API_BASE}/rooms/create`, {
+    const res = await fetch(`${getApiBase()}/rooms/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ room_code: roomCode, player_id: playerId, player_name: playerName }),
@@ -86,7 +86,7 @@ export const api = {
   },
 
   async joinRoom(roomCode: string, playerId: string, playerName: string) {
-    const res = await fetch(`${API_BASE}/rooms/join`, {
+    const res = await fetch(`${getApiBase()}/rooms/join`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ room_code: roomCode, player_id: playerId, player_name: playerName }),
@@ -101,7 +101,7 @@ export const api = {
   },
 
   async getRoom(roomCode: string): Promise<{ room: Room; players: Player[] }> {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}`);
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}`);
     if (!res.ok) throw new Error('Failed to get room');
     return res.json();
   },
@@ -113,7 +113,7 @@ export const api = {
     wolfAxisPayload?: any,
     roundSeed?: string
   ) {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}/phase`, {
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/phase`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -128,7 +128,7 @@ export const api = {
   },
 
   async leaveRoom(roomCode: string, playerId: string) {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}/leave?player_id=${playerId}`, {
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/leave?player_id=${playerId}`, {
       method: 'POST',
     });
     if (!res.ok) throw new Error('Failed to leave room');
@@ -142,7 +142,7 @@ export const api = {
     quadrant: number,
     offsets: { x: number; y: number }
   ) {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}/cards?player_id=${playerId}`, {
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/cards?player_id=${playerId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ card_id: cardId, quadrant, offsets }),
@@ -152,7 +152,7 @@ export const api = {
   },
 
   async submitVote(roomCode: string, playerId: string, targetSlot: number) {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}/vote?player_id=${playerId}`, {
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/vote?player_id=${playerId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ target_slot: targetSlot }),
@@ -162,13 +162,13 @@ export const api = {
   },
 
   async getVotes(roomCode: string): Promise<{ votes: Vote[] }> {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}/votes`);
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/votes`);
     if (!res.ok) throw new Error('Failed to get votes');
     return res.json();
   },
 
   async getHand(roomCode: string, playerId: string): Promise<{ hand: string[]; player_slot: number }> {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}/hand?player_id=${playerId}`);
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/hand?player_id=${playerId}`);
     if (!res.ok) throw new Error('Failed to get hand');
     return res.json();
   },
@@ -183,7 +183,7 @@ export const api = {
     wolf_axis: any;
     normal_axis: any;
   }> {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}/calculate_results`, {
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/calculate_results`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -196,7 +196,7 @@ export const api = {
     round: number;
     round_seed: string;
   }> {
-    const res = await fetch(`${API_BASE}/rooms/${roomCode}/next_round`, {
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/next_round`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -205,7 +205,7 @@ export const api = {
   },
 
   connectWebSocket(roomCode: string, playerId?: string, loadHistory: boolean = true): WebSocket {
-    let url = `${WS_BASE}/${roomCode}`;
+    let url = `${getWsBase()}/${roomCode}`;
     const params = new URLSearchParams();
 
     if (playerId) {

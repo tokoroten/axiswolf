@@ -486,17 +486,18 @@ export default function OnlineGame() {
             >
               📖 ルール
             </button>
-            <button
-              onClick={async () => {
-                if (confirm('ルームから退出しますか？')) {
-                  await handleLeaveRoom();
-                  navigate('/online');
-                }
-              }}
-              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded text-sm font-medium transition-colors"
-            >
-              退出
-            </button>
+            {isHost && room.phase !== 'lobby' && (
+              <button
+                onClick={async () => {
+                  if (confirm('ロビーに戻りますか？\n（ゲームの進行状況はリセットされます）')) {
+                    await updatePhase('lobby');
+                  }
+                }}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition-colors"
+              >
+                🏠 ロビーに戻る
+              </button>
+            )}
           </div>
         </div>
 

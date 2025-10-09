@@ -1,24 +1,25 @@
 """軸データ定義"""
+import random
 
 # TypeScriptの ThemeType に対応
-VALID_THEMES = ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle']
+VALID_THEMES = ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle', 'sport']
 
 # 軸ラベルデータ
 AXIS_LABELS = [
     # 評価・人気系
-    {'id': 'popularity_kids', 'positive': '子どもウケ', 'negative': '大人ウケ', 'themes': ['entertainment', 'place'], 'description': '年齢層による人気度'},
-    {'id': 'popularity_us', 'positive': 'アメリカで人気', 'negative': 'アメリカで不人気', 'themes': ['entertainment', 'vehicle'], 'description': 'アメリカでの人気度'},
-    {'id': 'popularity_young', 'positive': '若者に人気', 'negative': '高齢者に人気', 'themes': ['entertainment', 'place'], 'description': '世代間の人気差'},
-    {'id': 'popularity_urban', 'positive': '都市部で人気', 'negative': '地方で人気', 'themes': ['entertainment', 'place'], 'description': '地域による人気差'},
-    {'id': 'popularity_sns', 'positive': 'SNSで話題', 'negative': 'SNSで話題じゃない', 'themes': ['entertainment', 'place'], 'description': 'SNSでの話題性'},
+    {'id': 'popularity_kids', 'positive': '子どもウケ', 'negative': '大人ウケ', 'themes': ['entertainment', 'place', 'sport'], 'description': '年齢層による人気度'},
+    {'id': 'popularity_us', 'positive': 'アメリカで人気', 'negative': 'アメリカで不人気', 'themes': ['entertainment', 'vehicle', 'sport'], 'description': 'アメリカでの人気度'},
+    {'id': 'popularity_young', 'positive': '若者に人気', 'negative': '高齢者に人気', 'themes': ['entertainment', 'place', 'sport'], 'description': '世代間の人気差'},
+    {'id': 'popularity_urban', 'positive': '都市部で人気', 'negative': '地方で人気', 'themes': ['entertainment', 'place', 'sport'], 'description': '地域による人気差'},
+    {'id': 'popularity_sns', 'positive': 'SNSで話題', 'negative': 'SNSで話題じゃない', 'themes': ['entertainment', 'place', 'sport'], 'description': 'SNSでの話題性'},
 
     # 価格・経済系
-    {'id': 'price_level', 'positive': '安い', 'negative': '高い', 'themes': ['food', 'daily', 'vehicle'], 'description': '価格帯'},
+    {'id': 'price_level', 'positive': '安い', 'negative': '高い', 'themes': ['food', 'daily', 'vehicle', 'sport'], 'description': '価格帯'},
     {'id': 'price_target', 'positive': '富裕層向け', 'negative': '一般層向け', 'themes': ['food', 'daily', 'vehicle'], 'description': 'ターゲット層'},
 
     # 健康・実用系
     {'id': 'health', 'positive': '健康的', 'negative': '不健康', 'themes': ['food'], 'description': '健康への影響'},
-    {'id': 'practical', 'positive': '実用的', 'negative': '娯楽的', 'themes': ['daily'], 'description': '実用性レベル'},
+    {'id': 'practical', 'positive': '実用的', 'negative': '娯楽的', 'themes': ['daily', 'sport'], 'description': '実用性レベル'},
     {'id': 'eco', 'positive': '環境に優しい', 'negative': '環境に悪い', 'themes': ['vehicle'], 'description': '環境への影響'},
 
     # スタイル・見た目系
@@ -28,31 +29,31 @@ AXIS_LABELS = [
     {'id': 'traditional_modern', 'positive': '伝統的', 'negative': '革新的', 'themes': ['daily', 'entertainment', 'vehicle'], 'description': '新旧の度合い'},
 
     # 文化・地域系
-    {'id': 'culture_jp_west', 'positive': '日本的', 'negative': '西洋的', 'themes': ['entertainment', 'place'], 'description': '文化圏'},
+    {'id': 'culture_jp_west', 'positive': '日本的', 'negative': '西洋的', 'themes': ['entertainment', 'place', 'sport'], 'description': '文化圏'},
 
     # 時間・歴史系
-    {'id': 'old_new', 'positive': '古い', 'negative': '新しい', 'themes': ['entertainment', 'place', 'vehicle', 'daily'], 'description': '時代'},
-    {'id': 'history_long', 'positive': '歴史が長い', 'negative': '歴史が短い', 'themes': ['entertainment', 'place', 'vehicle', 'daily'], 'description': '歴史の長さ'},
-    {'id': 'seasonal', 'positive': '季節限定', 'negative': '通年販売', 'themes': ['food'], 'description': '販売時期'},
+    {'id': 'old_new', 'positive': '古い', 'negative': '新しい', 'themes': ['entertainment', 'place', 'vehicle', 'daily', 'sport'], 'description': '時代'},
+    {'id': 'history_long', 'positive': '歴史が長い', 'negative': '歴史が短い', 'themes': ['entertainment', 'place', 'vehicle', 'daily', 'sport'], 'description': '歴史の長さ'},
+    {'id': 'seasonal', 'positive': '季節限定', 'negative': '通年販売', 'themes': ['food', 'sport'], 'description': '販売時期'},
 
     # ターゲット系
-    {'id': 'gender_target', 'positive': '男性向け', 'negative': '女性向け', 'themes': ['entertainment', 'daily', 'vehicle'], 'description': '性別ターゲット'},
-    {'id': 'age_target', 'positive': '10代向け', 'negative': '50代向け', 'themes': ['entertainment', 'daily', 'vehicle'], 'description': '年代ターゲット'},
-    {'id': 'family_target', 'positive': '家族向け', 'negative': '一人暮らし向け', 'themes': ['entertainment', 'daily', 'vehicle'], 'description': '世帯ターゲット'},
+    {'id': 'gender_target', 'positive': '男性向け', 'negative': '女性向け', 'themes': ['entertainment', 'daily', 'vehicle', 'sport'], 'description': '性別ターゲット'},
+    {'id': 'age_target', 'positive': '10代向け', 'negative': '50代向け', 'themes': ['entertainment', 'daily', 'vehicle', 'sport'], 'description': '年代ターゲット'},
+    {'id': 'family_target', 'positive': '家族向け', 'negative': '一人暮らし向け', 'themes': ['entertainment', 'daily', 'vehicle', 'sport'], 'description': '世帯ターゲット'},
 
     # 質感系（触覚）
-    {'id': 'soft_hard', 'positive': 'やわらかい', 'negative': '硬い', 'themes': ['food', 'daily', 'animal', 'vehicle'], 'description': '硬さ'},
+    {'id': 'soft_hard', 'positive': 'やわらかい', 'negative': '硬い', 'themes': ['food', 'daily', 'animal', 'sport'], 'description': '硬さ'},
     {'id': 'smooth_rough', 'positive': 'つるつる', 'negative': 'ざらざら', 'themes': ['food', 'daily', 'animal', 'vehicle'], 'description': '表面の滑らかさ'},
     {'id': 'mochi_pasa', 'positive': 'もちもち', 'negative': 'パサパサ', 'themes': ['food'], 'description': '食感（弾力）'},
     {'id': 'fluffy_hard', 'positive': 'ふわふわ', 'negative': 'ごつごつ', 'themes': ['daily', 'animal', 'food'], 'description': '質感の柔らかさ'},
     {'id': 'sara_beta', 'positive': 'さらさら', 'negative': 'べたべた', 'themes': ['food', 'daily', 'animal'], 'description': '手触り'},
-    {'id': 'mofu_chiku', 'positive': 'もふもふ', 'negative': 'チクチク', 'themes': ['food', 'animal'], 'description': '毛並み'},
+    {'id': 'mofu_chiku', 'positive': 'もふもふ', 'negative': 'チクチク', 'themes': ['food', 'animal', 'sport'], 'description': '毛並み'},
 
     # 擬音系（全テーマ共通）
     {'id': 'kira_doro', 'positive': 'キラキラ', 'negative': 'ドロドロ', 'themes': ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], 'description': '光沢感'},
     {'id': 'pika_boro', 'positive': 'ピカピカ', 'negative': 'ボロボロ', 'themes': ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], 'description': '新しさ・状態'},
     {'id': 'tsuya_kusu', 'positive': 'ツヤツヤ', 'negative': 'くすんでる', 'themes': ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], 'description': '艶'},
-    {'id': 'shaki_gunya', 'positive': 'シャキシャキ', 'negative': 'ぐにゃぐにゃ', 'themes': ['food'], 'description': '歯ごたえ'},
+    {'id': 'shaki_gunya', 'positive': 'シャキシャキ', 'negative': 'ぐにゃぐにゃ', 'themes': ['food', 'sport'], 'description': '歯ごたえ'},
     {'id': 'pari_shina', 'positive': 'パリパリ', 'negative': 'しなしな', 'themes': ['food'], 'description': 'パリッと感'},
     {'id': 'kori_neba', 'positive': 'コリコリ', 'negative': 'ネバネバ', 'themes': ['food'], 'description': 'コリコリ感'},
     {'id': 'saku_netto', 'positive': 'サクサク', 'negative': 'ねっとり', 'themes': ['food'], 'description': 'サクッと感'},
@@ -66,102 +67,102 @@ AXIS_LABELS = [
     {'id': 'spicy_mild', 'positive': 'スパイシー', 'negative': 'マイルド', 'themes': ['food'], 'description': 'スパイス度'},
 
     # 温度系
-    {'id': 'hot_cold', 'positive': '熱い', 'negative': '冷たい', 'themes': ['food', 'place'], 'description': '温度'},
+    {'id': 'hot_cold', 'positive': '熱い', 'negative': '冷たい', 'themes': ['food', 'place', 'sport'], 'description': '温度'},
 
     # サイズ・形状系
-    {'id': 'big_small', 'positive': '大きい', 'negative': '小さい', 'themes': ['food', 'daily', 'animal', 'place', 'vehicle'], 'description': '大小'},
-    {'id': 'long_short', 'positive': '長い', 'negative': '短い', 'themes': ['daily', 'animal', 'vehicle'], 'description': '長さ'},
-    {'id': 'thick_thin', 'positive': '太い', 'negative': '細い', 'themes': ['daily', 'animal', 'vehicle'], 'description': '太さ'},
-    {'id': 'thick2_thin2', 'positive': '厚い', 'negative': '薄い', 'themes': ['food', 'daily'], 'description': '厚み'},
-    {'id': 'heavy_light', 'positive': '重い', 'negative': '軽い', 'themes': ['daily', 'animal', 'vehicle'], 'description': '重さ'},
-    {'id': 'round_square', 'positive': '丸い', 'negative': '角ばってる', 'themes': ['daily', 'vehicle'], 'description': '形状'},
-    {'id': 'high_low', 'positive': '高い', 'negative': '低い', 'themes': ['daily', 'animal', 'place', 'vehicle'], 'description': '高さ'},
+    {'id': 'big_small', 'positive': '大きい', 'negative': '小さい', 'themes': ['food', 'daily', 'animal', 'place', 'vehicle', 'sport'], 'description': '大小'},
+    {'id': 'long_short', 'positive': '長い', 'negative': '短い', 'themes': ['daily', 'animal', 'vehicle', 'sport'], 'description': '長さ'},
+    {'id': 'thick_thin', 'positive': '太い', 'negative': '細い', 'themes': ['daily', 'animal', 'vehicle', 'sport'], 'description': '太さ'},
+    {'id': 'thick2_thin2', 'positive': '厚い', 'negative': '薄い', 'themes': ['food', 'daily', 'sport'], 'description': '厚み'},
+    {'id': 'heavy_light', 'positive': '重い', 'negative': '軽い', 'themes': ['daily', 'animal', 'vehicle', 'sport'], 'description': '重さ'},
+    {'id': 'round_square', 'positive': '丸い', 'negative': '角ばってる', 'themes': ['daily', 'vehicle', 'sport'], 'description': '形状'},
+    {'id': 'high_low', 'positive': '高い', 'negative': '低い', 'themes': ['daily', 'animal', 'place', 'vehicle', 'sport'], 'description': '高さ'},
     {'id': 'deep_shallow', 'positive': '深い', 'negative': '浅い', 'themes': ['daily', 'place'], 'description': '深さ'},
     {'id': 'wide_narrow', 'positive': '広い', 'negative': '狭い', 'themes': ['daily', 'place', 'vehicle'], 'description': '広さ'},
     {'id': 'many_few', 'positive': '多い', 'negative': '少ない', 'themes': ['food', 'daily', 'animal', 'vehicle'], 'description': '数量'},
 
     # 速度・動き系
-    {'id': 'fast_slow', 'positive': '速い', 'negative': '遅い', 'themes': ['entertainment', 'animal', 'vehicle'], 'description': '速度'},
-    {'id': 'intense_calm', 'positive': '激しい', 'negative': '穏やか', 'themes': ['entertainment', 'animal', 'vehicle'], 'description': '激しさ'},
+    {'id': 'fast_slow', 'positive': '速い', 'negative': '遅い', 'themes': ['entertainment', 'animal', 'vehicle', 'sport'], 'description': '速度'},
+    {'id': 'intense_calm', 'positive': '激しい', 'negative': '穏やか', 'themes': ['entertainment', 'animal', 'vehicle', 'sport'], 'description': '激しさ'},
 
     # 音・視覚系
-    {'id': 'loud_quiet', 'positive': 'うるさい', 'negative': '静か', 'themes': ['entertainment', 'animal', 'place', 'vehicle'], 'description': '音量'},
+    {'id': 'loud_quiet', 'positive': 'うるさい', 'negative': '静か', 'themes': ['entertainment', 'animal', 'place', 'vehicle', 'sport'], 'description': '音量'},
     {'id': 'bright_dark', 'positive': '明るい', 'negative': '暗い', 'themes': ['daily', 'entertainment', 'animal', 'place', 'vehicle'], 'description': '明るさ'},
-    {'id': 'colorful_mono', 'positive': 'カラフル', 'negative': 'モノトーン', 'themes': ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], 'description': '色彩'},
-    {'id': 'flashy_plain', 'positive': '派手', 'negative': '地味', 'themes': ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle'], 'description': '派手さ'},
+    {'id': 'colorful_mono', 'positive': 'カラフル', 'negative': 'モノトーン', 'themes': ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle', 'sport'], 'description': '色彩'},
+    {'id': 'flashy_plain', 'positive': '派手', 'negative': '地味', 'themes': ['food', 'daily', 'entertainment', 'animal', 'place', 'vehicle', 'sport'], 'description': '派手さ'},
 
     # 感情・印象系
-    {'id': 'fun_boring', 'positive': '楽しい', 'negative': '退屈', 'themes': ['entertainment'], 'description': '楽しさ'},
-    {'id': 'waku_doki', 'positive': 'ワクワク', 'negative': 'ドキドキ', 'themes': ['entertainment'], 'description': '興奮の種類'},
+    {'id': 'fun_boring', 'positive': '楽しい', 'negative': '退屈', 'themes': ['entertainment', 'sport'], 'description': '楽しさ'},
+    {'id': 'waku_doki', 'positive': 'ワクワク', 'negative': 'ドキドキ', 'themes': ['entertainment', 'sport'], 'description': '興奮の種類'},
     {'id': 'hokko_thrill', 'positive': 'ほっこり', 'negative': 'スリリング', 'themes': ['entertainment'], 'description': '感情の方向'},
     {'id': 'nostalgic_cutting', 'positive': '懐かしい', 'negative': '最先端', 'themes': ['entertainment'], 'description': '新旧感'},
-    {'id': 'emotional', 'positive': 'エモい', 'negative': 'エモくない', 'themes': ['entertainment', 'place'], 'description': 'エモさ'},
-    {'id': 'instagrammable', 'positive': 'インスタ映え', 'negative': 'インスタ映えしない', 'themes': ['entertainment'], 'description': 'インスタ映え度'},
+    {'id': 'emotional', 'positive': 'エモい', 'negative': 'エモくない', 'themes': ['entertainment', 'place', 'sport'], 'description': 'エモさ'},
+    {'id': 'instagrammable', 'positive': 'インスタ映え', 'negative': 'インスタ映えしない', 'themes': ['entertainment', 'vehicle', 'place', 'sport'], 'description': 'インスタ映え度'},
     {'id': 'gentle_strict', 'positive': '優しい', 'negative': '厳しい', 'themes': ['entertainment', 'animal'], 'description': '優しさ'},
-    {'id': 'serious_playful', 'positive': '真面目', 'negative': 'ふざけている', 'themes': ['entertainment'], 'description': '真面目さ'},
-    {'id': 'romantic_realistic', 'positive': 'ロマンチック', 'negative': '現実的', 'themes': ['entertainment'], 'description': 'ロマンチック度'},
-    {'id': 'simple_sophisticated', 'positive': '素朴', 'negative': '洗練されている', 'themes': ['entertainment', 'place'], 'description': '洗練度'},
-    {'id': 'elegant_vulgar', 'positive': '上品', 'negative': '下品', 'themes': ['entertainment'], 'description': '品格'},
+    {'id': 'serious_playful', 'positive': '真面目', 'negative': 'ふざけている', 'themes': ['entertainment', 'sport'], 'description': '真面目さ'},
+    {'id': 'romantic_realistic', 'positive': 'ロマンチック', 'negative': '現実的', 'themes': ['entertainment', 'sport'], 'description': 'ロマンチック度'},
+    {'id': 'simple_sophisticated', 'positive': '素朴', 'negative': '洗練されている', 'themes': ['entertainment', 'place', 'sport'], 'description': '洗練度'},
+    {'id': 'elegant_vulgar', 'positive': '上品', 'negative': '下品', 'themes': ['entertainment', 'sport'], 'description': '品格'},
     {'id': 'stylish_lame', 'positive': 'おしゃれ', 'negative': 'ださい', 'themes': ['entertainment'], 'description': 'おしゃれ度'},
     {'id': 'elegant_casual', 'positive': 'エレガント', 'negative': 'カジュアル', 'themes': ['daily', 'entertainment', 'place', 'vehicle'], 'description': 'フォーマル度'},
-    {'id': 'cool_hot', 'positive': 'クール', 'negative': 'ホット', 'themes': ['entertainment', 'animal', 'vehicle'], 'description': 'クール度'},
-    {'id': 'clean_dirty', 'positive': '清潔', 'negative': '不潔', 'themes': ['place'], 'description': '清潔感'},
-    {'id': 'pure_sexy', 'positive': '清楚', 'negative': '妖艶', 'themes': ['entertainment'], 'description': '清楚さ'},
+    {'id': 'cool_hot', 'positive': 'クール', 'negative': 'ホット', 'themes': ['entertainment', 'animal', 'vehicle', 'sport'], 'description': 'クール度'},
+    {'id': 'clean_dirty', 'positive': '清潔', 'negative': '不潔', 'themes': ['place', 'sport'], 'description': '清潔感'},
+    {'id': 'pure_sexy', 'positive': '清楚', 'negative': '妖艶', 'themes': ['entertainment', 'sport'], 'description': '清楚さ'},
 
     # 音の印象系
-    {'id': 'round_sound', 'positive': 'まるっこい音', 'negative': 'とがった音', 'themes': ['entertainment', 'animal'], 'description': '音の印象'},
-    {'id': 'soft_name', 'positive': 'やわらかい名前', 'negative': 'かたい名前', 'themes': ['entertainment', 'animal', 'place'], 'description': '名前の印象'},
-    {'id': 'voiced_voiceless', 'positive': '濁音が多め', 'negative': '清音が多め', 'themes': ['entertainment', 'animal', 'place'], 'description': '濁音の多さ'},
+    {'id': 'round_sound', 'positive': 'まるっこい音', 'negative': 'とがった音', 'themes': ['entertainment', 'animal', 'sport'], 'description': '音の印象'},
+    {'id': 'soft_name', 'positive': 'やわらかい名前', 'negative': 'かたい名前', 'themes': ['entertainment', 'animal', 'place', 'sport'], 'description': '名前の印象'},
+    {'id': 'voiced_voiceless', 'positive': '濁音が多め', 'negative': '清音が多め', 'themes': ['entertainment', 'animal', 'place', 'sport'], 'description': '濁音の多さ'},
 
     # 匂い系
     {'id': 'good_bad_smell', 'positive': 'いい匂い', 'negative': '臭い', 'themes': ['food', 'daily', 'animal', 'place'], 'description': '匂いの良さ'},
     {'id': 'natural_artificial', 'positive': '天然の香り', 'negative': '人工的な香り', 'themes': ['food', 'daily'], 'description': '香りの自然さ'},
 
     # 使用頻度・場面系
-    {'id': 'daily_occasional', 'positive': '毎日使う', 'negative': 'たまに使う', 'themes': ['daily'], 'description': '使用頻度'},
-    {'id': 'morning_night', 'positive': '朝に使う', 'negative': '夜に使う', 'themes': ['daily', 'food'], 'description': '使用時間帯'},
-    {'id': 'indoor_outdoor', 'positive': '室内で使う', 'negative': '屋外で使う', 'themes': ['daily'], 'description': '使用場所'},
-    {'id': 'solo_group', 'positive': '一人で使う', 'negative': 'みんなで使う', 'themes': ['daily'], 'description': '使用人数'},
+    {'id': 'daily_occasional', 'positive': '毎日使う', 'negative': 'たまに使う', 'themes': ['daily', 'sport'], 'description': '使用頻度'},
+    {'id': 'morning_night', 'positive': '朝に使う', 'negative': '夜に使う', 'themes': ['daily', 'food', 'sport'], 'description': '使用時間帯'},
+    {'id': 'indoor_outdoor', 'positive': '室内で使う', 'negative': '屋外で使う', 'themes': ['daily', 'sport'], 'description': '使用場所'},
+    {'id': 'solo_group', 'positive': '一人で使う', 'negative': 'みんなで使う', 'themes': ['daily', 'sport'], 'description': '使用人数'},
     {'id': 'work_home', 'positive': '仕事で使う', 'negative': '家庭で使う', 'themes': ['daily', 'vehicle'], 'description': '使用シーン'},
     {'id': 'private_business', 'positive': 'プライベートで使う', 'negative': 'ビジネスで使う', 'themes': ['daily', 'vehicle'], 'description': '使用目的'},
     {'id': 'school_office', 'positive': '学校で使う', 'negative': 'オフィスで使う', 'themes': ['daily'], 'description': '使用場所'},
-    {'id': 'holiday_weekday', 'positive': '休日に使う', 'negative': '平日に使う', 'themes': ['daily', 'entertainment', 'vehicle'], 'description': '使用曜日'},
+    {'id': 'holiday_weekday', 'positive': '休日に使う', 'negative': '平日に使う', 'themes': ['daily', 'entertainment', 'vehicle', 'sport'], 'description': '使用曜日'},
     {'id': 'emergency_daily', 'positive': '緊急時に使う', 'negative': '日常的に使う', 'themes': ['daily', 'vehicle'], 'description': '使用頻度'},
     {'id': 'formal_casual', 'positive': 'フォーマルな場で使う', 'negative': 'カジュアルな場で使う', 'themes': ['daily'], 'description': 'フォーマル度'},
-    {'id': 'child_adult', 'positive': '子供が使う', 'negative': '大人が使う', 'themes': ['daily', 'entertainment', 'vehicle'], 'description': '年齢層'},
-    {'id': 'beginner_pro', 'positive': '初心者向け', 'negative': 'プロ向け', 'themes': ['daily'], 'description': 'スキルレベル'},
-    {'id': 'share_own', 'positive': '共有する', 'negative': '専有する', 'themes': ['daily', 'vehicle'], 'description': '所有形態'},
-    {'id': 'recreation_practical', 'positive': 'レクリエーション用', 'negative': '実用的', 'themes': ['daily', 'vehicle'], 'description': '用途'},
+    {'id': 'child_adult', 'positive': '子供が使う', 'negative': '大人が使う', 'themes': ['daily', 'entertainment', 'vehicle', 'sport'], 'description': '年齢層'},
+    {'id': 'beginner_pro', 'positive': '初心者向け', 'negative': 'プロ向け', 'themes': ['daily', 'sport'], 'description': 'スキルレベル'},
+    {'id': 'share_own', 'positive': '共有する', 'negative': '専有する', 'themes': ['daily', 'vehicle', 'sport'], 'description': '所有形態'},
+    {'id': 'recreation_practical', 'positive': 'レクリエーション用', 'negative': '実用的', 'themes': ['daily', 'vehicle', 'sport'], 'description': '用途'},
 
     # 素材系
     {'id': 'natural_synthetic', 'positive': '天然素材', 'negative': '合成素材', 'themes': ['daily'], 'description': '素材の自然さ'},
 
     # メンテナンス系
     {'id': 'easy_wash', 'positive': '洗いやすい', 'negative': '洗いにくい', 'themes': ['daily', 'animal'], 'description': '洗いやすさ'},
-    {'id': 'easy_maintenance', 'positive': 'メンテナンス簡単', 'negative': 'メンテナンス大変', 'themes': ['daily'], 'description': 'メンテナンス性'},
+    {'id': 'easy_maintenance', 'positive': 'メンテナンス簡単', 'negative': 'メンテナンス大変', 'themes': ['daily', 'vehicle', 'sport'], 'description': 'メンテナンス性'},
     {'id': 'easy_dirty', 'positive': '汚れやすい', 'negative': '汚れにくい', 'themes': ['daily', 'animal'], 'description': '汚れやすさ'},
 
     # レア度系
-    {'id': 'rare_common', 'positive': 'レア', 'negative': 'コモン', 'themes': ['food', 'daily', 'entertainment', 'animal', 'vehicle'], 'description': 'レア度'},
-    {'id': 'license_required', 'positive': '免許が必要', 'negative': '免許不要', 'themes': ['vehicle'], 'description': '免許の必要性'},
+    {'id': 'rare_common', 'positive': 'レア', 'negative': 'コモン', 'themes': ['food', 'daily', 'entertainment', 'animal', 'vehicle', 'sport'], 'description': 'レア度'},
+    {'id': 'license_required', 'positive': '免許が必要', 'negative': '免許不要', 'themes': ['vehicle', 'sport'], 'description': '免許の必要性'},
     {'id': 'easy_get', 'positive': '手に入れやすい', 'negative': '手に入れにくい', 'themes': ['food', 'daily', 'entertainment', 'vehicle'], 'description': '入手しやすさ'},
 
     # 汎用形容詞系
-    {'id': 'strong_weak', 'positive': '強い', 'negative': '弱い', 'themes': ['food', 'daily', 'entertainment', 'animal', 'vehicle'], 'description': '強さ'},
+    {'id': 'strong_weak', 'positive': '強い', 'negative': '弱い', 'themes': ['food', 'daily', 'entertainment', 'animal', 'vehicle', 'sport'], 'description': '強さ'},
     {'id': 'beautiful_ugly', 'positive': '美しい', 'negative': '醜い', 'themes': ['food', 'entertainment', 'place', 'vehicle'], 'description': '美しさ'},
     {'id': 'smart_stupid', 'positive': '賢い', 'negative': '愚か', 'themes': ['animal'], 'description': '賢さ'},
-    {'id': 'brave_coward', 'positive': '勇敢', 'negative': '臆病', 'themes': ['entertainment', 'animal'], 'description': '勇敢さ'},
-    {'id': 'active_passive', 'positive': 'アクティブ', 'negative': 'パッシブ', 'themes': ['animal'], 'description': '活動性'},
+    {'id': 'brave_coward', 'positive': '勇敢', 'negative': '臆病', 'themes': ['entertainment', 'animal', 'sport'], 'description': '勇敢さ'},
+    {'id': 'active_passive', 'positive': 'アクティブ', 'negative': 'パッシブ', 'themes': ['animal', 'sport'], 'description': '活動性'},
     {'id': 'positive_negative', 'positive': 'ポジティブ', 'negative': 'ネガティブ', 'themes': ['entertainment'], 'description': 'ポジティブ度'},
     {'id': 'clear_ambiguous', 'positive': '明確', 'negative': '曖昧', 'themes': ['entertainment', 'place'], 'description': '明確さ'},
     {'id': 'thick_light', 'positive': '濃い', 'negative': '薄い', 'themes': ['food', 'daily'], 'description': '濃さ'},
-    {'id': 'sharp_dull', 'positive': '鋭い', 'negative': '鈍い', 'themes': ['daily', 'animal'], 'description': '鋭さ'},
+    {'id': 'sharp_dull', 'positive': '鋭い', 'negative': '鈍い', 'themes': ['daily', 'animal', 'sport'], 'description': '鋭さ'},
     {'id': 'smooth_coarse', 'positive': '滑らか', 'negative': '粗い', 'themes': ['food', 'daily', 'vehicle'], 'description': '滑らかさ'},
-    {'id': 'flexible_rigid', 'positive': '柔軟', 'negative': '硬直', 'themes': ['daily', 'animal'], 'description': '柔軟性'},
+    {'id': 'flexible_rigid', 'positive': '柔軟', 'negative': '硬直', 'themes': ['daily', 'animal', 'sport'], 'description': '柔軟性'},
     {'id': 'luxury_simple', 'positive': '豪華', 'negative': '質素', 'themes': ['daily', 'place', 'vehicle'], 'description': '豪華さ'},
     {'id': 'modern_retro', 'positive': 'モダン', 'negative': 'レトロ', 'themes': ['entertainment', 'place', 'vehicle'], 'description': 'モダンさ'},
     {'id': 'open_closed', 'positive': 'オープン', 'negative': 'クローズド', 'themes': ['entertainment', 'place', 'vehicle'], 'description': 'オープン度'},
-    {'id': 'lively_inactive', 'positive': '活発', 'negative': '不活発', 'themes': ['entertainment', 'animal', 'place'], 'description': '活発さ'},
+    {'id': 'lively_inactive', 'positive': '活発', 'negative': '不活発', 'themes': ['entertainment', 'animal', 'place', 'sport'], 'description': '活発さ'},
     {'id': 'vivid_dull', 'positive': '鮮やか', 'negative': 'くすんだ', 'themes': ['food'], 'description': '鮮やかさ'},
     {'id': 'rich_poor', 'positive': 'リッチ', 'negative': 'プア', 'themes': ['food', 'daily', 'place', 'vehicle'], 'description': 'リッチ度'},
     {'id': 'smooth_jerky', 'positive': 'スムーズ', 'negative': 'ギクシャク', 'themes': ['entertainment', 'vehicle'], 'description': 'スムーズさ'},
@@ -169,8 +170,8 @@ AXIS_LABELS = [
     {'id': 'stable_unstable', 'positive': '安定', 'negative': '不安定', 'themes': ['daily', 'vehicle', 'place'], 'description': '安定性'},
     {'id': 'convenient_inconvenient', 'positive': '便利', 'negative': '不便', 'themes': ['daily', 'vehicle'], 'description': '便利さ'},
     {'id': 'comfortable_uncomfortable', 'positive': '快適', 'negative': '不快', 'themes': ['food', 'daily', 'place', 'vehicle'], 'description': '快適さ'},
-    {'id': 'safe_dangerous', 'positive': '安全', 'negative': '危険', 'themes': ['daily', 'animal', 'place', 'vehicle'], 'description': '安全性'},
-    {'id': 'accurate_inaccurate', 'positive': '正確', 'negative': '不正確', 'themes': ['daily', 'vehicle'], 'description': '正確さ'},
+    {'id': 'safe_dangerous', 'positive': '安全', 'negative': '危険', 'themes': ['daily', 'animal', 'place', 'vehicle', 'sport'], 'description': '安全性'},
+    {'id': 'accurate_inaccurate', 'positive': '正確', 'negative': '不正確', 'themes': ['daily', 'vehicle', 'sport'], 'description': '正確さ'},
     {'id': 'efficient_inefficient', 'positive': '効率的', 'negative': '非効率', 'themes': ['vehicle'], 'description': '効率性'},
     {'id': 'creative_ordinary', 'positive': '独創的', 'negative': '平凡', 'themes': ['entertainment', 'vehicle'], 'description': '独創性'},
 
@@ -212,13 +213,13 @@ AXIS_LABELS = [
     {'id': 'migratory_sedentary', 'positive': '移動する', 'negative': '定住する', 'themes': ['animal'], 'description': '移動性'},
     {'id': 'endangered_common', 'positive': '絶滅危惧', 'negative': '一般的', 'themes': ['animal'], 'description': '希少性'},
     {'id': 'pet_wild_only', 'positive': 'ペット向き', 'negative': 'ペット不向き', 'themes': ['animal'], 'description': 'ペット適性'},
-    {'id': 'trainable_untrained', 'positive': '訓練可能', 'negative': '訓練困難', 'themes': ['animal'], 'description': '訓練性'},
+    {'id': 'trainable_untrained', 'positive': '訓練可能', 'negative': '訓練困難', 'themes': ['animal', 'sport'], 'description': '訓練性'},
     {'id': 'vocal_silent', 'positive': '鳴く', 'negative': '鳴かない', 'themes': ['animal'], 'description': '発声'},
     {'id': 'furry_scaly', 'positive': '毛がある', 'negative': '鱗がある', 'themes': ['animal'], 'description': '体表'},
     {'id': 'fast_breeding', 'positive': '繁殖が早い', 'negative': '繁殖が遅い', 'themes': ['animal'], 'description': '繁殖速度'},
     {'id': 'hibernate_active', 'positive': '冬眠する', 'negative': '冬眠しない', 'themes': ['animal'], 'description': '冬眠'},
     {'id': 'large_small_group', 'positive': '群を作る', 'negative': '群を作らない', 'themes': ['animal'], 'description': '群れの規模'},
-    {'id': 'hierarchical_egalitarian', 'positive': '階級社会', 'negative': '平等社会', 'themes': ['animal'], 'description': '社会構造'},
+    {'id': 'hierarchical_egalitarian', 'positive': '階級社会', 'negative': '平等社会', 'themes': ['animal', 'sport'], 'description': '社会構造'},
     {'id': 'family_non_family', 'positive': '家族で暮らす', 'negative': '家族を作らない', 'themes': ['animal'], 'description': '家族形成'},
     {'id': 'monogamous_polygamous', 'positive': '一夫一婦', 'negative': '多夫多妻', 'themes': ['animal'], 'description': '配偶形態'},
     {'id': 'parental_care', 'positive': '子育てする', 'negative': '子育てしない', 'themes': ['animal'], 'description': '子育て'},
@@ -226,9 +227,26 @@ AXIS_LABELS = [
 ]
 
 
+def flip_axis_polarity(axis: dict, rng: random.Random) -> dict:
+    """
+    軸の正負をランダムに反転する（50%の確率）
+    """
+    # 50%の確率でpositiveとnegativeを入れ替える
+    if rng.random() < 0.5:
+        return {
+            'id': axis['id'],
+            'positive': axis['negative'],
+            'negative': axis['positive'],
+            'themes': axis['themes'],
+            'description': axis['description']
+        }
+    return axis.copy()
+
+
 def generate_axis_pair(themes: list[str], seed: int) -> dict:
     """
     テーマに基づいて軸ペアを生成
+    軸の正負はランダムに反転される
     """
     # テーマに合致する軸をフィルタリング
     valid_axes = [
@@ -239,17 +257,19 @@ def generate_axis_pair(themes: list[str], seed: int) -> dict:
     if len(valid_axes) < 2:
         raise ValueError('十分な軸が見つかりません')
 
-    # シード値から決定的に選択
-    horizontal_index = seed % len(valid_axes)
-    vertical_index = (seed * 7 + 13) % len(valid_axes)
+    # シード値で乱数を初期化
+    rng = random.Random(seed)
 
-    # 同じ軸を選ばないようにする
-    if horizontal_index == vertical_index:
-        vertical_index = (vertical_index + 1) % len(valid_axes)
+    # ランダムに2つの異なる軸を選択
+    selected_axes = rng.sample(valid_axes, 2)
+
+    # 各軸の正負をランダムに反転
+    horizontal_axis = flip_axis_polarity(selected_axes[0], rng)
+    vertical_axis = flip_axis_polarity(selected_axes[1], rng)
 
     return {
-        'horizontal': valid_axes[horizontal_index],
-        'vertical': valid_axes[vertical_index]
+        'horizontal': horizontal_axis,
+        'vertical': vertical_axis
     }
 
 
@@ -259,6 +279,7 @@ def generate_wolf_axis_pair(normal_axis: dict, themes: list[str], seed: int) -> 
     - パターンA (40%): 縦軸だけ変更
     - パターンB (40%): 横軸だけ変更
     - パターンC (20%): 両軸とも変更
+    各軸の正負はランダムに反転される
     """
     valid_axes = [
         axis for axis in AXIS_LABELS
@@ -268,81 +289,48 @@ def generate_wolf_axis_pair(normal_axis: dict, themes: list[str], seed: int) -> 
     if len(valid_axes) < 3:
         raise ValueError('人狼用の軸を生成できません')
 
+    # シード値で乱数を初期化
+    rng = random.Random(seed)
+
     # パターン選択（0-9の値で確率分布）
     # 0-3: パターンA (40%)
     # 4-7: パターンB (40%)
     # 8-9: パターンC (20%)
-    pattern_seed = (seed * 31 + 47) % 10
+    pattern = rng.randint(0, 9)
 
-    wolf_seed = seed * 31 + 47
+    # 既存の軸IDを取得
+    normal_horizontal_id = normal_axis['horizontal']['id']
+    normal_vertical_id = normal_axis['vertical']['id']
 
-    if pattern_seed < 4:
+    # 既存の軸を除外したリストを作成
+    available_axes = [axis for axis in valid_axes if axis['id'] not in [normal_horizontal_id, normal_vertical_id]]
+
+    if pattern < 4:
         # パターンA: 縦軸だけ変更
-        new_vertical_index = wolf_seed % len(valid_axes)
-
-        # 既存の軸と被らないようにする
-        max_attempts = 100
-        attempts = 0
-        while (
-            (valid_axes[new_vertical_index]['id'] == normal_axis['vertical']['id'] or
-             valid_axes[new_vertical_index]['id'] == normal_axis['horizontal']['id']) and
-            attempts < max_attempts
-        ):
-            new_vertical_index = (new_vertical_index + 1) % len(valid_axes)
-            attempts += 1
-
+        if not available_axes:
+            raise ValueError('新しい軸が見つかりません')
+        new_vertical = flip_axis_polarity(rng.choice(available_axes), rng)
         return {
             'horizontal': normal_axis['horizontal'],
-            'vertical': valid_axes[new_vertical_index]
+            'vertical': new_vertical
         }
 
-    elif pattern_seed < 8:
+    elif pattern < 8:
         # パターンB: 横軸だけ変更
-        new_horizontal_index = wolf_seed % len(valid_axes)
-
-        # 既存の軸と被らないようにする
-        max_attempts = 100
-        attempts = 0
-        while (
-            (valid_axes[new_horizontal_index]['id'] == normal_axis['horizontal']['id'] or
-             valid_axes[new_horizontal_index]['id'] == normal_axis['vertical']['id']) and
-            attempts < max_attempts
-        ):
-            new_horizontal_index = (new_horizontal_index + 1) % len(valid_axes)
-            attempts += 1
-
+        if not available_axes:
+            raise ValueError('新しい軸が見つかりません')
+        new_horizontal = flip_axis_polarity(rng.choice(available_axes), rng)
         return {
-            'horizontal': valid_axes[new_horizontal_index],
+            'horizontal': new_horizontal,
             'vertical': normal_axis['vertical']
         }
 
     else:
         # パターンC: 両軸とも変更
-        new_horizontal_index = wolf_seed % len(valid_axes)
-        new_vertical_index = (wolf_seed * 7 + 13) % len(valid_axes)
-
-        # 既存の軸と被らないようにする
-        max_attempts = 100
-        attempts = 0
-        while (
-            (valid_axes[new_horizontal_index]['id'] == normal_axis['horizontal']['id'] or
-             valid_axes[new_horizontal_index]['id'] == normal_axis['vertical']['id']) and
-            attempts < max_attempts
-        ):
-            new_horizontal_index = (new_horizontal_index + 1) % len(valid_axes)
-            attempts += 1
-
-        attempts = 0
-        while (
-            (valid_axes[new_vertical_index]['id'] == normal_axis['vertical']['id'] or
-             valid_axes[new_vertical_index]['id'] == normal_axis['horizontal']['id'] or
-             valid_axes[new_vertical_index]['id'] == valid_axes[new_horizontal_index]['id']) and
-            attempts < max_attempts
-        ):
-            new_vertical_index = (new_vertical_index + 1) % len(valid_axes)
-            attempts += 1
-
+        if len(available_axes) < 2:
+            raise ValueError('新しい軸が見つかりません')
+        selected = rng.sample(available_axes, 2)
         return {
-            'horizontal': valid_axes[new_horizontal_index],
-            'vertical': valid_axes[new_vertical_index]
+            'horizontal': flip_axis_polarity(selected[0], rng),
+            'vertical': flip_axis_polarity(selected[1], rng)
         }

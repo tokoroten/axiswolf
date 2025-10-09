@@ -1,4 +1,4 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -14,6 +14,9 @@ from pathlib import Path
 from axis_data import generate_axis_pair, generate_wolf_axis_pair
 
 app = FastAPI()
+
+# トークン認証を有効化するかどうか（環境変数で制御）
+REQUIRE_TOKEN_AUTH = os.getenv("REQUIRE_TOKEN_AUTH", "false").lower() == "true"
 
 # CORS設定
 # 環境変数から許可するオリジンを取得（本番環境対応）
@@ -261,6 +264,99 @@ def generate_token() -> str:
     安全なトークンを生成
     """
     return secrets.token_urlsafe(32)
+
+async def verify_player_token(
+    player_id: str = Query(...),
+    authorization: Optional[str] = Header(None),
+    token: Optional[str] = Query(None)
+) -> str:
+    """
+    プレイヤーのトークンを検証する依存関数
+
+    トークンは以下のいずれかの方法で提供される:
+    1. Authorizationヘッダー（"Bearer {token}" 形式）
+    2. クエリパラメータ token={token}（WebSocket用）
+
+    REQUIRE_TOKEN_AUTH=false の場合は検証をスキップ
+    """
+    # トークン認証が無効の場合はスキップ
+    if not REQUIRE_TOKEN_AUTH:
+        return player_id
+
+    # トークンを取得
+    extracted_token = None
+
+    # Authorizationヘッダーから取得
+    if authorization and authorization.startswith("Bearer "):
+        extracted_token = authorization[7:]  # "Bearer " を除去
+    # クエリパラメータから取得（WebSocket用）
+    elif token:
+        extracted_token = token
+
+    # トークンが提供されていない場合
+    if not extracted_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required. Please provide a valid token."
+        )
+
+    # player_idに対応するトークンを確認
+    stored_token = player_tokens.get(player_id)
+    if not stored_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid player_id. Please rejoin the room."
+        )
+
+    # トークンを照合
+    if stored_token != extracted_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid token. Please rejoin the room."
+        )
+
+    return player_id
+
+class VerifyHostToken:
+    """
+    ホストのトークンを検証する依存クラス
+
+    verify_player_token に加えて、そのプレイヤーがホストかどうかも確認
+    """
+    def __init__(self, room_code: str):
+        self.room_code = room_code
+
+    async def __call__(
+        self,
+        player_id: str = Query(...),
+        authorization: Optional[str] = Header(None),
+        token: Optional[str] = Query(None)
+    ) -> str:
+        # まずプレイヤートークンを検証
+        verified_player_id = await verify_player_token(player_id, authorization, token)
+
+        # トークン認証が無効の場合は、ここでもホストチェックをスキップ
+        if not REQUIRE_TOKEN_AUTH:
+            return verified_player_id
+
+        # ルームが存在するか確認
+        if self.room_code not in rooms:
+            raise HTTPException(status_code=404, detail="Room not found")
+
+        # プレイヤーがホストか確認
+        room_players = players.get(self.room_code, [])
+        player = next((p for p in room_players if p["player_id"] == verified_player_id), None)
+
+        if not player:
+            raise HTTPException(status_code=404, detail="Player not found in room")
+
+        if not player.get("is_host"):
+            raise HTTPException(
+                status_code=403,
+                detail="Only the host can perform this action"
+            )
+
+        return verified_player_id
 
 # オンメモリストレージ
 rooms: Dict[str, dict] = {}
@@ -512,7 +608,10 @@ async def verify_token(player_id: str, token: str):
 
 # プレイヤー退出
 @app.post("/api/rooms/{room_code}/leave")
-async def leave_room(room_code: str, player_id: str):
+async def leave_room(
+    room_code: str,
+    player_id: str = Depends(verify_player_token)
+):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
@@ -573,11 +672,22 @@ async def get_room(room_code: str):
 
 # テーマ更新
 @app.post("/api/rooms/{room_code}/themes")
-async def update_themes(room_code: str, req: UpdateThemesRequest):
+async def update_themes(
+    room_code: str,
+    req: UpdateThemesRequest,
+    player_id: str = Depends(verify_player_token)
+):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
     room = rooms[room_code]
+
+    # ホストチェック（トークン認証が有効な場合のみ）
+    if REQUIRE_TOKEN_AUTH:
+        room_players = players.get(room_code, [])
+        player = next((p for p in room_players if p["player_id"] == player_id), None)
+        if not player or not player.get("is_host"):
+            raise HTTPException(status_code=403, detail="Only the host can update themes")
 
     # ロビー中のみテーマ変更可能
     if room["phase"] != "lobby":
@@ -599,9 +709,20 @@ async def update_themes(room_code: str, req: UpdateThemesRequest):
 
 # フェーズ更新
 @app.post("/api/rooms/{room_code}/phase")
-async def update_phase(room_code: str, req: UpdatePhaseRequest):
+async def update_phase(
+    room_code: str,
+    req: UpdatePhaseRequest,
+    player_id: str = Depends(verify_player_token)
+):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
+
+    # ホストチェック（トークン認証が有効な場合のみ）
+    if REQUIRE_TOKEN_AUTH:
+        room_players = players.get(room_code, [])
+        player = next((p for p in room_players if p["player_id"] == player_id), None)
+        if not player or not player.get("is_host"):
+            raise HTTPException(status_code=403, detail="Only the host can update the phase")
 
     now = datetime.now()
     rooms[room_code]["phase"] = req.phase
@@ -735,7 +856,11 @@ async def update_phase(room_code: str, req: UpdatePhaseRequest):
 
 # カード配置
 @app.post("/api/rooms/{room_code}/cards")
-async def place_card(room_code: str, player_id: str, req: PlaceCardRequest):
+async def place_card(
+    room_code: str,
+    req: PlaceCardRequest,
+    player_id: str = Depends(verify_player_token)
+):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
@@ -781,7 +906,10 @@ async def place_card(room_code: str, player_id: str, req: PlaceCardRequest):
 
 # 手札取得
 @app.get("/api/rooms/{room_code}/hand")
-async def get_hand(room_code: str, player_id: str):
+async def get_hand(
+    room_code: str,
+    player_id: str = Depends(verify_player_token)
+):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
@@ -812,7 +940,11 @@ async def get_hand(room_code: str, player_id: str):
 
 # 投票
 @app.post("/api/rooms/{room_code}/vote")
-async def submit_vote(room_code: str, player_id: str, req: SubmitVoteRequest):
+async def submit_vote(
+    room_code: str,
+    req: SubmitVoteRequest,
+    player_id: str = Depends(verify_player_token)
+):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
@@ -885,9 +1017,19 @@ async def calculate_results(room_code: str):
 
 # 次ラウンドへ移行
 @app.post("/api/rooms/{room_code}/next_round")
-async def start_next_round(room_code: str):
+async def start_next_round(
+    room_code: str,
+    player_id: str = Depends(verify_player_token)
+):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
+
+    # ホストチェック（トークン認証が有効な場合のみ）
+    if REQUIRE_TOKEN_AUTH:
+        room_players = players.get(room_code, [])
+        player = next((p for p in room_players if p["player_id"] == player_id), None)
+        if not player or not player.get("is_host"):
+            raise HTTPException(status_code=403, detail="Only the host can start the next round")
 
     room = rooms[room_code]
     room_players = players.get(room_code, [])
@@ -970,8 +1112,28 @@ async def get_all_rooms():
 
 # WebSocket接続
 @app.websocket("/ws/{room_code}")
-async def websocket_endpoint(websocket: WebSocket, room_code: str, player_id: Optional[str] = Query(None), load_history: bool = Query(True)):
+async def websocket_endpoint(
+    websocket: WebSocket,
+    room_code: str,
+    player_id: Optional[str] = Query(None),
+    token: Optional[str] = Query(None),
+    load_history: bool = Query(True)
+):
     print(f"[WebSocket] 接続要求: room={room_code}, player_id={player_id}, load_history={load_history}")
+
+    # トークン認証が有効な場合はトークンを検証
+    if REQUIRE_TOKEN_AUTH and player_id:
+        # トークンが提供されていない場合
+        if not token:
+            await websocket.close(code=1008, reason="Authentication required")
+            return
+
+        # player_idに対応するトークンを確認
+        stored_token = player_tokens.get(player_id)
+        if not stored_token or stored_token != token:
+            await websocket.close(code=1008, reason="Invalid token")
+            return
+
     await manager.connect(websocket, room_code, player_id)
     print(f"[WebSocket] 接続完了: room={room_code}, player_id={player_id}")
 

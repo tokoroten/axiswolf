@@ -53,6 +53,7 @@ export interface Room {
   round_seed: string | null;
   scores: string;
   themes: string | null;
+  vc_enabled: boolean;
   discussion_deadline: string | null;
   created_at: string;
   updated_at: string;
@@ -275,6 +276,19 @@ export const api = {
   async getDebugRooms() {
     const res = await fetch(`${getApiBase()}/debug/rooms`);
     if (!res.ok) throw new Error('Failed to fetch debug rooms');
+    return res.json();
+  },
+
+  async updateVcSettings(roomCode: string, vcEnabled: boolean): Promise<{ success: boolean; vc_enabled: boolean }> {
+    const playerId = localStorage.getItem('online_player_id');
+    if (!playerId) throw new Error('Player ID not found');
+
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/vc_settings?player_id=${playerId}`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ vc_enabled: vcEnabled }),
+    });
+    if (!res.ok) throw new Error('Failed to update VC settings');
     return res.json();
   },
 };

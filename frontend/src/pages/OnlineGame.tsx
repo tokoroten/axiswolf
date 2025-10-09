@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
+import { useVoiceChat } from '../contexts/VoiceChatContext';
 import { getPlayerColorStyle } from '../utils/playerColors';
 import GameBoard from '../components/GameBoard';
 import GameRules from '../components/GameRules';
@@ -14,6 +15,7 @@ export default function OnlineGame() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
   const { room, players, placedCards, votes, isHost, playerSlot, playerId, ws, updatePhase, updateThemes, placeCard, submitVote, fetchVotes, fetchHand, calculateResults, startNextRound } = useGame();
+  const { initializeVoiceChat, disconnectVoiceChat, connectToPeer, isConnected: vcConnected } = useVoiceChat();
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [myAxis, setMyAxis] = useState<AxisPayload | null>(null);
   const [myHand, setMyHand] = useState<string[]>([]);
@@ -203,6 +205,66 @@ export default function OnlineGame() {
 
     return () => clearInterval(interval);
   }, [resultsPhaseStartTime]);
+
+  // ボイスチャット自動接続
+  useEffect(() => {
+    if (!room || !roomCode || !playerId || playerSlot === null || players.length === 0 || !ws) return;
+
+    // VC有効でロビーまたはゲーム中なら接続
+    if (room.vc_enabled && !vcConnected) {
+      console.log('[VoiceChat] Auto-connecting to voice chat');
+      initializeVoiceChat(roomCode, playerId, ws);
+    }
+
+    // VCが無効化されたら切断
+    if (!room.vc_enabled && vcConnected) {
+      console.log('[VoiceChat] Disconnecting from voice chat (VC disabled)');
+      disconnectVoiceChat();
+    }
+  }, [room?.vc_enabled, roomCode, playerId, playerSlot, players.length, ws, vcConnected, initializeVoiceChat, disconnectVoiceChat]);
+
+  // 他のプレイヤーのPeer ID通知を受け取ってP2P接続
+  useEffect(() => {
+    const handleVcPeerId = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const data = customEvent.detail;
+
+      const remotePeerId = data.peer_id;
+      const remotePlayerId = data.player_id;
+
+      console.log('📨 [OnlineGame/VC] Received VC peer ID event:', { remotePlayerId, remotePeerId, myPlayerId: playerId });
+
+      // 自分自身の通知は無視
+      if (remotePlayerId === playerId) {
+        console.log('⏭️ [OnlineGame/VC] Ignoring own peer ID');
+        return;
+      }
+
+      console.log('🔍 [OnlineGame/VC] VC status:', { vcConnected, hasRemotePeerId: !!remotePeerId });
+
+      // VC接続中の場合のみP2P接続を試みる
+      if (vcConnected && remotePeerId) {
+        console.log('🚀 [OnlineGame/VC] Attempting P2P connection to:', remotePlayerId);
+        connectToPeer(remotePeerId, remotePlayerId);
+      } else if (!vcConnected) {
+        console.log('⚠️ [OnlineGame/VC] Not connected to VC yet, skipping P2P connection');
+      } else if (!remotePeerId) {
+        console.log('⚠️ [OnlineGame/VC] No remote peer ID provided');
+      }
+    };
+
+    window.addEventListener('vc-peer-id', handleVcPeerId);
+    return () => window.removeEventListener('vc-peer-id', handleVcPeerId);
+  }, [vcConnected, playerId, connectToPeer]);
+
+  // コンポーネントのアンマウント時にVC切断
+  useEffect(() => {
+    return () => {
+      if (vcConnected) {
+        disconnectVoiceChat();
+      }
+    };
+  }, [vcConnected, disconnectVoiceChat]);
 
   const handleStartGame = async () => {
     if (!isHost || !roomCode) return;
@@ -554,6 +616,49 @@ export default function OnlineGame() {
                       );
                     });
                   })()}
+                </div>
+              </div>
+            )}
+
+            {/* ボイスチャット設定 */}
+            {isHost && (
+              <div className="bg-gradient-to-r from-blue-900 to-indigo-900 p-4 rounded mb-4 border-2 border-blue-500">
+                <h2 className="font-bold mb-3 text-yellow-300">🎤 ボイスチャット設定</h2>
+                <p className="text-sm text-gray-300 mb-3">ゲーム中にプレイヤー同士で音声通話を行えます</p>
+
+                <button
+                  onClick={() => {
+                    const newVcEnabled = !room.vc_enabled;
+                    api.updateVcSettings(roomCode!, newVcEnabled).catch((error) => {
+                      console.error('Failed to update VC settings:', error);
+                      alert('ボイスチャット設定の更新に失敗しました');
+                    });
+                  }}
+                  className={`w-full p-3 rounded-lg font-medium transition-all border-2 ${
+                    room.vc_enabled
+                      ? 'bg-green-600 border-green-400 text-white shadow-lg'
+                      : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  <div className="text-2xl mb-1">{room.vc_enabled ? '🔊' : '🔇'}</div>
+                  <div className="text-sm">{room.vc_enabled ? 'VC有効' : 'VC無効'}</div>
+                </button>
+
+                <div className="mt-3 text-xs text-gray-400">
+                  {room.vc_enabled
+                    ? 'ゲーム開始後、全プレイヤーが自動的に音声通話に接続されます'
+                    : 'ボイスチャットは無効です。外部ツール（Discord等）をご利用ください'}
+                </div>
+              </div>
+            )}
+
+            {/* ホスト以外のプレイヤー向け：VC設定表示 */}
+            {!isHost && (
+              <div className="bg-gray-800 p-4 rounded mb-4 border-2 border-gray-700">
+                <h2 className="font-bold mb-2 text-gray-300">🎤 ボイスチャット</h2>
+                <div className={`px-3 py-2 rounded-lg text-sm ${room.vc_enabled ? 'bg-green-700' : 'bg-gray-700'}`}>
+                  <span className="mr-1">{room.vc_enabled ? '🔊' : '🔇'}</span>
+                  <span>{room.vc_enabled ? 'VC有効' : 'VC無効'}</span>
                 </div>
               </div>
             )}

@@ -78,20 +78,31 @@ export default function OnlineHome() {
   };
 
   const handleCreate = async () => {
-    if (!roomCode.trim() || !playerName.trim()) {
-      alert('ルームコードと名前を入力してください');
+    if (!playerName.trim()) {
+      alert('名前を入力してください');
       return;
     }
-    if (roomCode.trim().length < 4) {
+
+    // ルームコードが空の場合は自動生成
+    let finalRoomCode = roomCode.trim();
+    if (!finalRoomCode) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字(I, O, 0, 1)を除外
+      finalRoomCode = '';
+      for (let i = 0; i < 10; i++) {
+        finalRoomCode += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      console.log('[OnlineHome] ルームコードを自動生成しました:', finalRoomCode);
+    } else if (finalRoomCode.length < 4) {
       alert('ルームコードは4文字以上で入力してください');
       return;
     }
+
     try {
       // プレイヤー名をlocalStorageに保存
       localStorage.setItem('saved_player_name', playerName.trim());
 
-      await createRoom(roomCode, playerId, playerName);
-      navigate(`/online/${roomCode}`);
+      await createRoom(finalRoomCode, playerId, playerName);
+      navigate(`/online/${finalRoomCode}`);
     } catch (error) {
       console.error('Failed to create room:', error);
       alert('ルーム作成に失敗しました');
@@ -201,7 +212,7 @@ export default function OnlineHome() {
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  ルームコード（4文字以上）
+                  ルームコード（任意・空欄で自動生成）
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -211,7 +222,6 @@ export default function OnlineHome() {
                     placeholder="例: ABCD1234"
                     className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-purple-500 focus:outline-none text-lg font-mono text-gray-900"
                     maxLength={10}
-                    minLength={4}
                   />
                   <button
                     type="button"

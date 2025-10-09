@@ -247,18 +247,32 @@ def generate_axis_pair(themes: list[str], seed: int) -> dict:
     """
     テーマに基づいて軸ペアを生成
     軸の正負はランダムに反転される
+
+    - themes に 'chaos' が含まれる場合: 全軸から選択
+    - 単一テーマの場合: そのテーマの軸のみ
+    - 複数テーマの場合: seedで1つのテーマを選択し、その軸から選ぶ
     """
-    # テーマに合致する軸をフィルタリング
-    valid_axes = [
-        axis for axis in AXIS_LABELS
-        if any(theme in axis['themes'] for theme in themes)
-    ]
+    rng = random.Random(seed)
+
+    # カオスモードチェック
+    if 'chaos' in themes:
+        valid_axes = AXIS_LABELS.copy()
+    # 単一テーマの場合
+    elif len(themes) == 1:
+        valid_axes = [
+            axis for axis in AXIS_LABELS
+            if themes[0] in axis['themes']
+        ]
+    # 複数テーマの場合: 1つ選択
+    else:
+        selected_theme = rng.choice(themes)
+        valid_axes = [
+            axis for axis in AXIS_LABELS
+            if selected_theme in axis['themes']
+        ]
 
     if len(valid_axes) < 2:
         raise ValueError('十分な軸が見つかりません')
-
-    # シード値で乱数を初期化
-    rng = random.Random(seed)
 
     # ランダムに2つの異なる軸を選択
     selected_axes = rng.sample(valid_axes, 2)
@@ -281,16 +295,27 @@ def generate_wolf_axis_pair(normal_axis: dict, themes: list[str], seed: int) -> 
     - パターンC (20%): 両軸とも変更
     各軸の正負はランダムに反転される
     """
-    valid_axes = [
-        axis for axis in AXIS_LABELS
-        if any(theme in axis['themes'] for theme in themes)
-    ]
+    rng = random.Random(seed)
+
+    # カオスモードチェック
+    if 'chaos' in themes:
+        valid_axes = AXIS_LABELS.copy()
+    # 単一テーマの場合
+    elif len(themes) == 1:
+        valid_axes = [
+            axis for axis in AXIS_LABELS
+            if themes[0] in axis['themes']
+        ]
+    # 複数テーマの場合: 1つ選択（normal_axisと同じテーマ）
+    else:
+        selected_theme = rng.choice(themes)
+        valid_axes = [
+            axis for axis in AXIS_LABELS
+            if selected_theme in axis['themes']
+        ]
 
     if len(valid_axes) < 3:
         raise ValueError('人狼用の軸を生成できません')
-
-    # シード値で乱数を初期化
-    rng = random.Random(seed)
 
     # パターン選択（0-9の値で確率分布）
     # 0-3: パターンA (40%)

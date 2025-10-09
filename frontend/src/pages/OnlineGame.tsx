@@ -446,7 +446,7 @@ export default function OnlineGame() {
                 <h2 className="font-bold mb-3 text-yellow-300">🎴 カードセット選択</h2>
                 <p className="text-sm text-gray-300 mb-3">使用するカードのテーマを選んでください（複数選択可）</p>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {[
                     { id: 'food', label: '食べ物', icon: '🍕' },
                     { id: 'daily', label: '日用品', icon: '📱' },
@@ -455,6 +455,7 @@ export default function OnlineGame() {
                     { id: 'place', label: '場所', icon: '🏙️' },
                     { id: 'vehicle', label: '乗り物', icon: '🚗' },
                     { id: 'sport', label: 'スポーツ', icon: '⚽' },
+                    { id: 'chaos', label: 'カオス', icon: '🌀', special: true },
                   ].map((theme) => {
                     const currentThemes = room.themes ? JSON.parse(room.themes) : ['food', 'daily', 'entertainment'];
                     const isSelected = currentThemes.includes(theme.id);
@@ -462,28 +463,42 @@ export default function OnlineGame() {
                     return (
                       <button
                         key={theme.id}
-                        onClick={async () => {
-                          const newThemes = isSelected
-                            ? currentThemes.filter((t: string) => t !== theme.id)
-                            : [...currentThemes, theme.id];
+                        onClick={() => {
+                          let newThemes: string[];
 
-                          // 最低1つは選択する必要がある
-                          if (newThemes.length === 0) {
-                            alert('最低1つのテーマを選択してください');
-                            return;
+                          // カオスモードの特別処理
+                          if (theme.id === 'chaos') {
+                            // カオスモードを選択した場合、他のテーマを全て解除
+                            newThemes = isSelected ? ['food', 'daily', 'entertainment'] : ['chaos'];
+                          } else {
+                            // 通常テーマの処理
+                            // カオスモードが選択されている場合は解除
+                            const themesWithoutChaos = currentThemes.filter((t: string) => t !== 'chaos');
+                            newThemes = isSelected
+                              ? themesWithoutChaos.filter((t: string) => t !== theme.id)
+                              : [...themesWithoutChaos, theme.id];
+
+                            // 最低1つは選択する必要がある
+                            if (newThemes.length === 0) {
+                              alert('最低1つのテーマを選択してください');
+                              return;
+                            }
                           }
 
-                          try {
-                            await updateThemes(newThemes);
-                          } catch (error) {
+                          // 投機的UI更新：サーバーのレスポンスを待たずに実行
+                          updateThemes(newThemes).catch((error) => {
                             console.error('Failed to update themes:', error);
                             alert('テーマの更新に失敗しました');
-                          }
+                          });
                         }}
                         className={`p-3 rounded-lg font-medium transition-all border-2 ${
-                          isSelected
-                            ? 'bg-green-600 border-green-400 text-white shadow-lg'
-                            : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                          theme.id === 'chaos'
+                            ? isSelected
+                              ? 'bg-purple-600 border-purple-400 text-white shadow-lg animate-pulse'
+                              : 'bg-gray-700 border-purple-600 text-gray-300 hover:bg-gray-600'
+                            : isSelected
+                              ? 'bg-green-600 border-green-400 text-white shadow-lg'
+                              : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
                         }`}
                       >
                         <div className="text-2xl mb-1">{theme.icon}</div>
@@ -504,6 +519,7 @@ export default function OnlineGame() {
                       place: '場所',
                       vehicle: '乗り物',
                       sport: 'スポーツ',
+                      chaos: 'カオス（全テーマ混合）',
                     };
                     return `現在の選択: ${currentThemes.map((t: string) => themeLabels[t as keyof typeof themeLabels] || t).join('、')}`;
                   })()}
@@ -526,11 +542,12 @@ export default function OnlineGame() {
                       place: { label: '場所', icon: '🏙️' },
                       vehicle: { label: '乗り物', icon: '🚗' },
                       sport: { label: 'スポーツ', icon: '⚽' },
+                      chaos: { label: 'カオス（全テーマ混合）', icon: '🌀' },
                     };
                     return currentThemes.map((t: string) => {
                       const info = themeInfo[t as keyof typeof themeInfo];
                       return (
-                        <div key={t} className="bg-gray-700 px-3 py-2 rounded-lg text-sm">
+                        <div key={t} className={`px-3 py-2 rounded-lg text-sm ${t === 'chaos' ? 'bg-purple-700 animate-pulse' : 'bg-gray-700'}`}>
                           <span className="mr-1">{info?.icon || '❓'}</span>
                           <span>{info?.label || t}</span>
                         </div>

@@ -166,23 +166,38 @@ CARD_POOL = []
 for theme_cards in CARD_POOL_BY_THEME.values():
     CARD_POOL.extend(theme_cards)
 
-def get_filtered_card_pool(themes: Optional[List[str]] = None) -> List[str]:
+def get_filtered_card_pool(themes: Optional[List[str]] = None, seed: Optional[int] = None) -> List[str]:
     """
     テーマに基づいてフィルタリングされたカードプールを取得
+
+    - themes が None または空の場合: 全カード
+    - 'chaos' が含まれる場合: 全テーマのカードを混合（カオスモード）
+    - 単一テーマの場合: そのテーマのカードのみ
+    - 複数テーマの場合: seedを使って1つのテーマをランダムに選択
     """
     if not themes:
         return CARD_POOL.copy()
 
-    filtered_cards = []
-    for theme in themes:
-        if theme in CARD_POOL_BY_THEME:
-            filtered_cards.extend(CARD_POOL_BY_THEME[theme])
-
-    # テーマが指定されていない、または無効な場合は全カードを返す
-    if not filtered_cards:
+    # カオスモードチェック
+    if 'chaos' in themes:
         return CARD_POOL.copy()
 
-    return filtered_cards
+    # 単一テーマの場合
+    if len(themes) == 1:
+        theme = themes[0]
+        if theme in CARD_POOL_BY_THEME:
+            return CARD_POOL_BY_THEME[theme].copy()
+        return CARD_POOL.copy()
+
+    # 複数テーマの場合: seedを使って1つランダムに選択
+    if seed is not None:
+        rng = random.Random(seed)
+        selected_theme = rng.choice(themes)
+        if selected_theme in CARD_POOL_BY_THEME:
+            return CARD_POOL_BY_THEME[selected_theme].copy()
+
+    # フォールバック: 全カード
+    return CARD_POOL.copy()
 
 def generate_all_hands(round_seed: str, num_players: int, hand_size: int = 5, themes: Optional[List[str]] = None) -> Dict[int, List[str]]:
     """
@@ -190,8 +205,8 @@ def generate_all_hands(round_seed: str, num_players: int, hand_size: int = 5, th
     """
     rng = random.Random(int(round_seed))
 
-    # テーマに応じたカードプールを取得
-    card_pool = get_filtered_card_pool(themes)
+    # テーマに応じたカードプールを取得（seedを渡してテーマ選択）
+    card_pool = get_filtered_card_pool(themes, int(round_seed))
 
     # カードプールをシャッフル
     shuffled_cards = card_pool.copy()

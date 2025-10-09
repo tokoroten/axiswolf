@@ -6,7 +6,7 @@
 ## プロジェクト構造
 ```
 yonshogen/
-├── axis_server/     # フロントエンド（React + TypeScript）
+├── frontend/        # フロントエンド（React + TypeScript）
 ├── backend/         # バックエンド（FastAPI + WebSocket）
 └── docs/           # ドキュメント・進捗管理
 ```
@@ -15,7 +15,7 @@ yonshogen/
 
 ### フロントエンド
 ```bash
-cd axis_server
+cd frontend
 npm install
 npm run dev     # http://localhost:5178
 ```
@@ -50,7 +50,7 @@ uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 コード変更後は必ず以下を実行：
 
 ```bash
-cd axis_server
+cd frontend
 npm run build  # TypeScript型チェック
 ```
 

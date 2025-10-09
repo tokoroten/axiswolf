@@ -8,7 +8,10 @@ export default function OnlineHome() {
   const { createRoom, joinRoom } = useGame();
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [roomCode, setRoomCode] = useState('');
-  const [playerName, setPlayerName] = useState('');
+  const [playerName, setPlayerName] = useState(() => {
+    // localStorageから保存された名前を読み込む
+    return localStorage.getItem('saved_player_name') || '';
+  });
   const [playerId] = useState(() => `player_${Math.random().toString(36).slice(2)}`);
   const [savedRoom, setSavedRoom] = useState<{ roomCode: string; playerName: string } | null>(null);
   const [showRules, setShowRules] = useState(false);
@@ -84,6 +87,9 @@ export default function OnlineHome() {
       return;
     }
     try {
+      // プレイヤー名をlocalStorageに保存
+      localStorage.setItem('saved_player_name', playerName.trim());
+
       await createRoom(roomCode, playerId, playerName);
       navigate(`/online/${roomCode}`);
     } catch (error) {
@@ -98,6 +104,9 @@ export default function OnlineHome() {
       return;
     }
     try {
+      // プレイヤー名をlocalStorageに保存
+      localStorage.setItem('saved_player_name', playerName.trim());
+
       await joinRoom(roomCode, playerId, playerName);
       navigate(`/online/${roomCode}`);
     } catch (error: any) {
@@ -341,12 +350,40 @@ export default function OnlineHome() {
               </section>
 
               <section>
-                <h3 className="text-xl font-bold text-purple-600 mb-3">⚡ ポイント</h3>
+                <h3 className="text-xl font-bold text-purple-600 mb-3">⚡ 重要なルール</h3>
+                <div className="bg-red-50 border-2 border-red-400 rounded-lg p-4 mb-3">
+                  <p className="font-bold text-red-700 mb-2">🚫 禁止事項</p>
+                  <p className="text-gray-700">
+                    <strong>軸の名前を直接言ってはいけません！</strong><br/>
+                    例：「この軸は『甘い-辛い』だよね」と言うのはNG<br/>
+                    カードの配置理由は説明してOKです。
+                  </p>
+                </div>
                 <ul className="list-disc list-inside text-gray-700 space-y-2">
                   <li>人狼は自分の軸がバレないようにカードを配置する</li>
                   <li>村人は議論を通じて人狼の違和感を見つける</li>
                   <li>カードの配置位置と理由が重要な手がかりになる</li>
                 </ul>
+              </section>
+
+              <section>
+                <h3 className="text-xl font-bold text-purple-600 mb-3">🏆 得点ルール</h3>
+                <div className="bg-green-50 border-2 border-green-300 rounded-lg p-4 mb-3">
+                  <h4 className="font-bold text-green-800 mb-2">村人が勝利した場合（人狼を単独で指摘）</h4>
+                  <ul className="list-disc list-inside text-gray-700 space-y-1 ml-2">
+                    <li>村人全員：<strong className="text-green-600">+1点</strong></li>
+                    <li>人狼を指したプレイヤー：<strong className="text-green-600">さらに+1点</strong>（合計+2点）</li>
+                    <li>人狼：0点</li>
+                  </ul>
+                </div>
+                <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+                  <h4 className="font-bold text-red-800 mb-2">人狼が勝利した場合（同票または逃げ切り）</h4>
+                  <ul className="list-disc list-inside text-gray-700 space-y-1 ml-2">
+                    <li>人狼：<strong className="text-red-600">+3点</strong></li>
+                    <li>人狼を指したプレイヤー：<strong className="text-blue-600">+1点</strong></li>
+                    <li>他の村人：0点</li>
+                  </ul>
+                </div>
               </section>
 
               <section>

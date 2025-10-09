@@ -24,6 +24,7 @@ interface GameContextType {
     top_voted: number[];
     wolf_caught: boolean;
     scores: Record<string, number>;
+    total_scores: Record<string, number>;
     vote_counts: Record<number, number>;
     all_hands: Record<string, string[]>;
     wolf_axis: any;
@@ -173,6 +174,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
             // (軸データやシード値が更新されている可能性があるため)
             api.getRoom(room.room_code).then(({ room: updatedRoom }) => {
               setRoom(updatedRoom);
+
+              // 投票フェーズに入ったら投票をクリア
+              if (updatedRoom.phase === 'voting') {
+                setVotes([]);
+              }
             });
             break;
 
@@ -193,6 +199,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
             break;
 
           case 'vote_submitted':
+            // 投票が送信されたら投票状況を更新
+            setVotes(prev => {
+              // 既存の同じvoter_slotの投票を削除
+              const filtered = prev.filter(v => v.voter_slot !== message.voter_slot);
+              // 新しい投票を追加
+              return [
+                ...filtered,
+                {
+                  room_code: room.room_code,
+                  round: room.active_round,
+                  voter_slot: message.voter_slot,
+                  target_slot: message.target_slot,
+                  submitted_at: new Date().toISOString(),
+                },
+              ];
+            });
             break;
 
           case 'round_started':
@@ -263,6 +285,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setPlayerSlot(player_slot);
     setPlayerId(pid);
 
+    // 古いゲーム状態をクリア
+    setPlacedCards([]);
+    setVotes([]);
+
     // LocalStorageに保存（再接続用）
     localStorage.setItem('online_room_code', roomCode);
     localStorage.setItem('online_player_id', pid);
@@ -278,6 +304,10 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setPlayers(newPlayers);
     setPlayerSlot(0);
     setPlayerId(pid);
+
+    // 古いゲーム状態をクリア
+    setPlacedCards([]);
+    setVotes([]);
 
     // LocalStorageに保存（再接続用）
     localStorage.setItem('online_room_code', roomCode);

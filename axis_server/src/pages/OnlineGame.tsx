@@ -17,7 +17,6 @@ export default function OnlineGame() {
   const [myAxis, setMyAxis] = useState<any>(null);
   const [myHand, setMyHand] = useState<string[]>([]);
   const [draggedCard, setDraggedCard] = useState<{ cardId: string; isPlaced: boolean } | null>(null);
-  const [selectedVote, setSelectedVote] = useState<number | null>(null);
   const lastRoundSeedRef = useRef<string | null>(null);
   const handFetchedRef = useRef<boolean>(false);
   const [gameResults, setGameResults] = useState<{
@@ -25,6 +24,7 @@ export default function OnlineGame() {
     top_voted: number[];
     wolf_caught: boolean;
     scores: Record<string, number>;
+    total_scores: Record<string, number>;
     vote_counts: Record<number, number>;
     all_hands: Record<string, string[]>;
     wolf_axis: any;
@@ -100,6 +100,11 @@ export default function OnlineGame() {
     });
 
     if (room && room.axis_payload && room.round_seed && playerSlot !== null && players.length > 0) {
+      // resultsフェーズでは軸を設定しない（gameResultsから設定する）
+      if (room.phase === 'results') {
+        return;
+      }
+
       // 軸データを取得
       const axisData = typeof room.axis_payload === 'string'
         ? JSON.parse(room.axis_payload)
@@ -158,6 +163,7 @@ export default function OnlineGame() {
             top_voted: results.top_voted,
             wolf_caught: results.wolf_caught,
             scores: results.scores,
+            total_scores: results.total_scores || results.scores,
             vote_counts: results.vote_counts,
             all_hands: results.all_hands,
             wolf_axis: results.wolf_axis,
@@ -251,7 +257,89 @@ export default function OnlineGame() {
       <div className="max-w-6xl mx-auto">
         {/* ヘッダー */}
         <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold">ルーム: {roomCode}</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold">ルーム: {roomCode}</h1>
+
+            {/* ホストの進行ボタン */}
+            {isHost && room.phase === 'lobby' && (
+              <button
+                onClick={() => {
+                  if (confirm('ゲームを開始しますか？')) {
+                    handleStartGame();
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-bold transition-colors whitespace-nowrap"
+              >
+                ゲーム開始
+              </button>
+            )}
+
+            {isHost && room.phase === 'placement' && (
+              <button
+                onClick={async () => {
+                  if (confirm('投票フェーズに進みますか？')) {
+                    await updatePhase('voting');
+                  }
+                }}
+                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-bold transition-colors whitespace-nowrap"
+              >
+                投票フェーズへ
+              </button>
+            )}
+
+            {isHost && room.phase === 'voting' && (
+              <button
+                onClick={async () => {
+                  if (confirm('結果を表示しますか？')) {
+                    try {
+                      await fetchVotes();
+                      // まずフェーズを更新（バックエンドでスコア計算が実行される）
+                      await updatePhase('results');
+                      // その後、計算済みの結果を取得
+                      const results = await calculateResults();
+                      setGameResults({
+                        wolf_slot: results.wolf_slot,
+                        top_voted: results.top_voted,
+                        wolf_caught: results.wolf_caught,
+                        scores: results.scores,
+                        total_scores: results.total_scores,
+                        vote_counts: results.vote_counts,
+                        all_hands: results.all_hands,
+                        wolf_axis: results.wolf_axis,
+                        normal_axis: results.normal_axis,
+                      });
+                    } catch (error) {
+                      console.error('Failed to calculate results:', error);
+                      alert('結果の計算に失敗しました');
+                    }
+                  }
+                }}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded font-bold transition-colors whitespace-nowrap"
+              >
+                結果を表示
+              </button>
+            )}
+
+            {isHost && room.phase === 'results' && (
+              <button
+                onClick={async () => {
+                  if (confirm('次のラウンドを開始しますか？')) {
+                    try {
+                      await startNextRound();
+                      setGameResults(null);
+                    } catch (error) {
+                      console.error('Failed to start next round:', error);
+                      alert('次ラウンド開始に失敗しました');
+                    }
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-bold transition-colors whitespace-nowrap"
+              >
+                次のラウンドへ
+              </button>
+            )}
+          </div>
+
           <div className="flex items-center gap-4">
             <div className="text-sm">
               フェーズ: {room.phase} | プレイヤー数: {players.length}
@@ -287,15 +375,6 @@ export default function OnlineGame() {
             </button>
           </div>
         </div>
-
-        {room.phase === 'lobby' && isHost && (
-          <button
-            onClick={handleStartGame}
-            className="mb-4 px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
-          >
-            ゲーム開始
-          </button>
-        )}
 
         {room.phase === 'lobby' && (
           <>
@@ -392,19 +471,7 @@ export default function OnlineGame() {
           <>
             {/* プレイヤー進行状況 */}
             <div className="bg-gray-800 p-4 rounded mb-4">
-              <div className="flex items-center gap-4 mb-3">
-                {isHost && (
-                  <button
-                    onClick={async () => {
-                      await updatePhase('voting');
-                    }}
-                    className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-bold whitespace-nowrap"
-                  >
-                    投票フェーズへ進む
-                  </button>
-                )}
-                <h3 className="font-bold">プレイヤー進行状況</h3>
-              </div>
+              <h3 className="font-bold mb-3">プレイヤー進行状況</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {players.map((player) => {
                   const cardCount = placedCards.filter(c => c.player_slot === player.player_slot).length;
@@ -498,92 +565,72 @@ export default function OnlineGame() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              {players.map((player) => {
-                const isMyself = player.player_slot === playerSlot;
-                const isSelected = selectedVote === player.player_slot;
-                const hasVoted = votes.some(v => v.voter_slot === player.player_slot);
+            {/* 自分が投票済みかチェック */}
+            {(() => {
+              const myVote = votes.find(v => v.voter_slot === playerSlot);
+              const hasVoted = !!myVote;
 
-                return (
-                  <button
-                    key={player.player_slot}
-                    onClick={() => !isMyself && setSelectedVote(player.player_slot)}
-                    disabled={isMyself}
-                    className={`
-                      p-4 rounded-lg border-2 transition-all
-                      ${isMyself
-                        ? 'bg-gray-700 border-gray-600 cursor-not-allowed opacity-50'
-                        : isSelected
-                          ? 'border-yellow-400 bg-yellow-900/50 scale-105 shadow-lg'
-                          : 'border-gray-600 hover:border-gray-500 hover:bg-gray-700'
-                      }
-                    `}
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <PlayerAvatar player={player} size="large" />
-                      <div className="font-bold">{player.player_name}</div>
-                      {isMyself && <div className="text-xs text-gray-400">（自分）</div>}
-                      {hasVoted && <div className="text-green-400 text-xs">✓ 投票済み</div>}
-                      {isSelected && <div className="text-yellow-400 text-xl">✓</div>}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+              return (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {players.map((player) => {
+                    const isMyself = player.player_slot === playerSlot;
+                    const playerHasVoted = votes.some(v => v.voter_slot === player.player_slot);
+                    const isVotedByMe = myVote?.target_slot === player.player_slot;
 
-            <button
-              onClick={async () => {
-                if (selectedVote !== null && roomCode && playerSlot !== null) {
-                  await submitVote(selectedVote);
-                  await fetchVotes();
-                }
-              }}
-              disabled={selectedVote === null}
-              className={`
-                w-full py-3 px-6 rounded-lg font-bold text-lg transition-colors mb-4
-                ${selectedVote !== null
-                  ? 'bg-green-600 hover:bg-green-700 text-white'
-                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                }
-              `}
-            >
-              {selectedVote !== null ? '投票する' : '投票先を選択してください'}
-            </button>
+                    // 自分が投票済みで、このプレイヤーに投票していない場合は表示しない
+                    if (hasVoted && !isVotedByMe && !isMyself) {
+                      return null;
+                    }
 
-            {isHost && (
-              <button
-                onClick={async () => {
-                  try {
-                    await fetchVotes();
-                    const results = await calculateResults();
-                    setGameResults({
-                      wolf_slot: results.wolf_slot,
-                      top_voted: results.top_voted,
-                      wolf_caught: results.wolf_caught,
-                      scores: results.scores,
-                      vote_counts: results.vote_counts,
-                      all_hands: results.all_hands,
-                      wolf_axis: results.wolf_axis,
-                      normal_axis: results.normal_axis,
-                    });
-                    await updatePhase('results');
-                  } catch (error) {
-                    console.error('Failed to calculate results:', error);
-                    alert('結果の計算に失敗しました');
-                  }
-                }}
-                className="w-full py-3 px-6 rounded-lg font-bold text-lg transition-colors bg-purple-600 hover:bg-purple-700 text-white mb-6"
-              >
-                結果を表示
-              </button>
-            )}
+                    return (
+                      <div key={player.player_slot} className="flex flex-col gap-3">
+                        <div
+                          className={`
+                            p-4 rounded-lg border-2 transition-all
+                            ${isMyself
+                              ? 'bg-gray-700 border-gray-600 opacity-50'
+                              : isVotedByMe
+                                ? 'border-green-400 bg-green-900/50'
+                                : 'border-gray-600 bg-gray-700'
+                            }
+                          `}
+                        >
+                          <div className="flex flex-col items-center gap-2">
+                            <PlayerAvatar player={player} size="large" />
+                            <div className="font-bold">{player.player_name}</div>
+                            {isMyself && <div className="text-xs text-gray-400">（自分）</div>}
+                            {playerHasVoted && <div className="text-green-400 text-xs">✓ 投票済み</div>}
+                            {isVotedByMe && <div className="text-green-400 text-2xl">✓</div>}
+                          </div>
+                        </div>
 
-            {/* ゲームボード表示（最下部） */}
-            {myAxis && (
+                        {/* 投票ボタン（自分以外 & 未投票の場合のみ表示） */}
+                        {!isMyself && !hasVoted && (
+                          <button
+                            onClick={async () => {
+                              if (roomCode && playerSlot !== null) {
+                                await submitVote(player.player_slot);
+                                // fetchVotes()は不要 - WebSocketで自動更新される
+                              }
+                            }}
+                            className="py-2 px-4 rounded-lg font-bold text-sm transition-colors bg-red-600 hover:bg-red-700 text-white"
+                          >
+                            🐺 投票する
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* ゲームボード表示（最下部） - 村人の軸のみ表示 */}
+            {room.axis_payload && (
               <div>
-                <h3 className="font-bold mb-3">配置状況</h3>
+                <h3 className="font-bold mb-3">配置状況（村人の軸）</h3>
                 <GameBoard
-                  axis={myAxis}
+                  axis={typeof room.axis_payload === 'string' ? JSON.parse(room.axis_payload) : room.axis_payload}
                   placedCards={placedCards}
                   players={players}
                   interactive={false}
@@ -613,7 +660,8 @@ export default function OnlineGame() {
                   const voteCount = gameResults.vote_counts[player.player_slot] || 0;
                   const isWolf = player.player_slot === gameResults.wolf_slot;
                   const isMostVoted = gameResults.top_voted.includes(player.player_slot);
-                  const playerScore = gameResults.scores[player.player_slot.toString()] || 0;
+                  const roundScore = gameResults.scores?.[player.player_slot.toString()] || 0;  // このラウンドで獲得したスコア
+                  const totalScore = gameResults.total_scores?.[player.player_slot.toString()] || 0;  // 累積スコア
 
                   // このプレイヤーが誰に投票したかを取得
                   const myVote = votes.find(v => v.voter_slot === player.player_slot);
@@ -636,8 +684,11 @@ export default function OnlineGame() {
                             → {votedPlayer.player_name}に投票
                           </div>
                         )}
-                        <div className={`font-bold ${playerScore >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                          スコア: {playerScore >= 0 ? '+' : ''}{playerScore}
+                        <div className={`font-bold text-lg ${roundScore >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          {roundScore >= 0 ? '+' : ''}{roundScore}点
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          累積: {totalScore}点
                         </div>
                       </div>
                     </div>
@@ -720,23 +771,6 @@ export default function OnlineGame() {
                   </div>
                 );
               })()}
-
-              {isHost && (
-                <button
-                  onClick={async () => {
-                    try {
-                      await startNextRound();
-                      setGameResults(null);
-                    } catch (error) {
-                      console.error('Failed to start next round:', error);
-                      alert('次ラウンド開始に失敗しました');
-                    }
-                  }}
-                  className="w-full py-3 px-6 rounded-lg font-bold text-lg transition-colors bg-green-600 hover:bg-green-700 text-white mb-6"
-                >
-                  次のラウンドへ
-                </button>
-              )}
 
               {/* ゲームボード（最下部）（村人の軸 + 人狼の軸を1つのボードに表示） */}
               {gameResults.normal_axis && gameResults.wolf_axis ? (

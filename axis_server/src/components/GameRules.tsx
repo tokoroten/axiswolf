@@ -94,19 +94,42 @@ export default function GameRules({ isOpen, onClose }: GameRulesProps) {
             </h3>
             <div className="space-y-3 text-gray-700">
               <div className="bg-white p-3 rounded-lg border-2 border-green-300">
-                <p className="font-bold text-green-700 mb-1">✅ 人狼を捕獲した場合</p>
+                <p className="font-bold text-green-700 mb-2">✅ 村人が勝利した場合（人狼を単独で指摘）</p>
                 <ul className="text-sm space-y-1 ml-4">
-                  <li>• 村人: <span className="font-bold text-green-600">+1点</span></li>
-                  <li>• 人狼: <span className="font-bold text-red-600">-2点</span></li>
+                  <li>• 村人全員: <span className="font-bold text-green-600">+1点</span></li>
+                  <li>• 人狼を指したプレイヤー: <span className="font-bold text-green-600">さらに+1点</span>（合計+2点）</li>
+                  <li>• 人狼: <span className="font-bold text-gray-600">0点</span></li>
                 </ul>
               </div>
               <div className="bg-white p-3 rounded-lg border-2 border-red-300">
-                <p className="font-bold text-red-700 mb-1">❌ 人狼が逃げた場合</p>
+                <p className="font-bold text-red-700 mb-2">❌ 人狼が勝利した場合（同票または逃げ切り）</p>
                 <ul className="text-sm space-y-1 ml-4">
-                  <li>• 村人: <span className="font-bold text-red-600">-1点</span></li>
-                  <li>• 人狼: <span className="font-bold text-green-600">+3点</span></li>
+                  <li>• 人狼: <span className="font-bold text-red-600">+3点</span></li>
+                  <li>• 人狼を指したプレイヤー: <span className="font-bold text-blue-600">+1点</span></li>
+                  <li>• 他の村人: <span className="font-bold text-gray-600">0点</span></li>
                 </ul>
               </div>
+              <div className="bg-white p-2 rounded border border-blue-300 mt-2">
+                <p className="text-xs text-blue-700">
+                  <span className="font-bold">💡 ポイント:</span> 人狼を指したプレイヤーは勝敗に関係なく+1点獲得できます！
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* 禁止事項 */}
+          <section className="bg-red-50 border-2 border-red-400 rounded-lg p-4">
+            <h3 className="text-xl font-bold text-red-700 mb-3 flex items-center gap-2">
+              🚫 禁止事項
+            </h3>
+            <div className="text-gray-700">
+              <p className="font-bold mb-2">軸の名前を直接言ってはいけません！</p>
+              <p className="text-sm mb-2">
+                <span className="text-red-600 font-bold">NG例:</span> 「この軸は『甘い-辛い』だよね」
+              </p>
+              <p className="text-sm">
+                <span className="text-green-600 font-bold">OK例:</span> 「このカードはこっち側に置きたい」「これは中央寄りかな」
+              </p>
             </div>
           </section>
 

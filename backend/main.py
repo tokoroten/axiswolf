@@ -9,6 +9,7 @@ import asyncio
 import json
 import secrets
 import os
+import sys
 from pathlib import Path
 from axis_data import generate_axis_pair, generate_wolf_axis_pair
 
@@ -46,16 +47,38 @@ CARD_POOL = [
     '本', '漫画', '雑誌', 'ドラマ',
 ]
 
-def generate_hand(player_slot: int, round_seed: str, hand_size: int = 5) -> List[str]:
+def generate_all_hands(round_seed: str, num_players: int, hand_size: int = 5) -> Dict[int, List[str]]:
     """
-    シード値を使って決定的に手札を生成
+    全プレイヤーの手札を一度に生成（重複なし）
     """
-    seed = int(round_seed) + player_slot * 1000
-    rng = random.Random(seed)
+    rng = random.Random(int(round_seed))
 
-    # ランダムにカードを選択
-    hand = rng.sample(CARD_POOL, min(hand_size, len(CARD_POOL)))
-    return hand
+    # カードプールをシャッフル
+    shuffled_cards = CARD_POOL.copy()
+    rng.shuffle(shuffled_cards)
+
+    # 各プレイヤーに配布
+    hands = {}
+    for player_slot in range(num_players):
+        start_idx = player_slot * hand_size
+        end_idx = start_idx + hand_size
+
+        # カードが足りない場合は循環して使用
+        if end_idx <= len(shuffled_cards):
+            hands[player_slot] = shuffled_cards[start_idx:end_idx]
+        else:
+            # カードプールが足りない場合は、再度シャッフルして追加
+            remaining = hand_size - (len(shuffled_cards) - start_idx)
+            hands[player_slot] = shuffled_cards[start_idx:] + shuffled_cards[:remaining]
+
+    return hands
+
+def generate_hand(player_slot: int, round_seed: str, num_players: int, hand_size: int = 5) -> List[str]:
+    """
+    特定プレイヤーの手札を生成（重複なしで配布）
+    """
+    all_hands = generate_all_hands(round_seed, num_players, hand_size)
+    return all_hands.get(player_slot, [])
 
 def generate_token() -> str:
     """
@@ -70,6 +93,7 @@ cards: Dict[str, List[dict]] = {}
 votes: Dict[str, List[dict]] = {}
 chat_messages: Dict[str, List[dict]] = {}  # room_code -> チャットメッセージリスト
 player_tokens: Dict[str, str] = {}  # player_id -> token の対応
+cached_results: Dict[str, dict] = {}  # room_code + round -> 計算結果のキャッシュ
 
 # WebSocket接続管理
 class ConnectionManager:
@@ -203,14 +227,10 @@ async def create_room(req: CreateRoomRequest):
         "room_code": req.room_code,
         "phase": "lobby",
         "active_round": 0,
-        "active_player_slot": None,
-        "start_player_slot": None,
-        "mutator_id": None,
         "axis_payload": None,
         "wolf_axis_payload": None,
         "round_seed": None,
         "scores": "{}",
-        "discussion_deadline": None,
         "created_at": now.isoformat(),
         "updated_at": now.isoformat(),
         "last_activity_at": now.isoformat(),
@@ -223,8 +243,6 @@ async def create_room(req: CreateRoomRequest):
         "player_name": req.player_name,
         "status": "connected",
         "is_host": 1,
-        "hand_seed": None,
-        "hand_committed_at": None,
         "connected_at": datetime.now().isoformat(),
         "last_seen_at": datetime.now().isoformat(),
     }]
@@ -278,8 +296,6 @@ async def join_room(req: JoinRoomRequest):
         "player_name": req.player_name,
         "status": "connected",
         "is_host": 0,
-        "hand_seed": None,
-        "hand_committed_at": None,
         "connected_at": datetime.now().isoformat(),
         "last_seen_at": datetime.now().isoformat(),
     }
@@ -385,6 +401,86 @@ async def update_phase(room_code: str, req: UpdatePhaseRequest):
     rooms[room_code]["updated_at"] = now.isoformat()
     rooms[room_code]["last_activity_at"] = now.isoformat()
 
+    # 結果フェーズに移行する際にスコア計算を実行
+    if req.phase == 'results':
+        room = rooms[room_code]
+        room_players = players.get(room_code, [])
+        room_votes = votes.get(room_code, [])
+
+        # 人狼を特定
+        if room["round_seed"]:
+            wolf_slot = int(room["round_seed"]) % len(room_players)
+
+            # 投票集計
+            vote_counts: Dict[int, int] = {}
+            for vote in room_votes:
+                target = vote["target_slot"]
+                vote_counts[target] = vote_counts.get(target, 0) + 1
+
+            # 最多得票数
+            max_votes = max(vote_counts.values()) if vote_counts else 0
+            # 最多得票者（複数の可能性）
+            top_voted = [slot for slot, count in vote_counts.items() if count == max_votes]
+
+            # 勝利判定：人狼が単独で最多票を獲得した場合のみ村人勝利
+            wolf_caught = wolf_slot in top_voted and len(top_voted) == 1
+
+            # スコア計算
+            import json
+            scores_before_round = json.loads(room["scores"]) if room["scores"] else {}
+            current_scores = scores_before_round.copy()
+            round_scores = {}
+
+            print(f"[update_phase:results] Calculating scores. scores_before_round: {scores_before_round}", file=sys.stderr)
+
+            for player in room_players:
+                slot = player["player_slot"]
+                slot_str = str(slot)
+
+                if slot_str not in current_scores:
+                    current_scores[slot_str] = 0
+
+                round_score = 0
+
+                # 人狼を指していたプレイヤーは+1点
+                voted_for_wolf = any(
+                    vote["voter_slot"] == slot and vote["target_slot"] == wolf_slot
+                    for vote in room_votes
+                )
+                if voted_for_wolf:
+                    round_score += 1
+
+                # 村人が勝利した場合
+                if wolf_caught:
+                    if slot != wolf_slot:
+                        round_score += 1
+                else:
+                    # 人狼が勝利した場合
+                    if slot == wolf_slot:
+                        round_score += 3
+
+                round_scores[slot_str] = round_score
+                current_scores[slot_str] += round_score
+
+            # スコアと結果を保存
+            room["scores"] = json.dumps(current_scores)
+
+            # 全プレイヤーの手札を生成
+            num_players = len(room_players)
+            all_hands_dict = generate_all_hands(room["round_seed"], num_players, 5)
+            all_hands = {str(slot): hand for slot, hand in all_hands_dict.items()}
+
+            # 結果をroomに保存
+            room["round_results_calculated"] = True
+            room["last_wolf_slot"] = wolf_slot
+            room["last_top_voted"] = json.dumps(top_voted)
+            room["last_wolf_caught"] = wolf_caught
+            room["last_round_scores"] = json.dumps(round_scores)
+            room["last_vote_counts"] = json.dumps(vote_counts)
+            room["last_all_hands"] = json.dumps(all_hands)
+
+            print(f"[update_phase:results] Scores calculated. round_scores: {round_scores}, total_scores: {current_scores}", file=sys.stderr)
+
     # 軸データが提供されていない場合は自動生成
     if req.phase == 'placement' and not req.axis_payload:
         # デフォルトテーマを使用
@@ -479,8 +575,9 @@ async def get_hand(room_code: str, player_id: str):
     if not room["round_seed"]:
         raise HTTPException(status_code=400, detail="Game not started")
 
-    # 手札を生成
-    hand = generate_hand(player["player_slot"], room["round_seed"], 5)
+    # 手札を生成（プレイヤー数を渡して重複なしで配布）
+    num_players = len(room_players)
+    hand = generate_hand(player["player_slot"], room["round_seed"], num_players, 5)
 
     return {
         "hand": hand,
@@ -517,7 +614,8 @@ async def submit_vote(room_code: str, player_id: str, req: SubmitVoteRequest):
 
     await manager.broadcast(room_code, {
         "type": "vote_submitted",
-        "voter_slot": player["player_slot"]
+        "voter_slot": player["player_slot"],
+        "target_slot": req.target_slot
     })
 
     return {"success": True}
@@ -531,85 +629,30 @@ async def get_votes(room_code: str):
     room_votes = votes.get(room_code, [])
     return {"votes": room_votes}
 
-# 投票結果を計算してスコアを更新
+# 結果取得（計算済みの結果を返すだけ）
 @app.post("/api/rooms/{room_code}/calculate_results")
 async def calculate_results(room_code: str):
     if room_code not in rooms:
         raise HTTPException(status_code=404, detail="Room not found")
 
     room = rooms[room_code]
-    room_players = players.get(room_code, [])
-    room_votes = votes.get(room_code, [])
 
-    # 最終アクティビティ時刻を更新
-    rooms[room_code]["last_activity_at"] = datetime.now().isoformat()
+    # 結果が計算されていない場合はエラー
+    if not room.get("round_results_calculated"):
+        raise HTTPException(status_code=400, detail="Results not calculated yet. Move to results phase first.")
 
-    # 人狼を特定
-    if not room["round_seed"]:
-        raise HTTPException(status_code=400, detail="Game not started")
-
-    wolf_slot = int(room["round_seed"]) % len(room_players)
-
-    # 投票集計
-    vote_counts: Dict[int, int] = {}
-    for vote in room_votes:
-        target = vote["target_slot"]
-        vote_counts[target] = vote_counts.get(target, 0) + 1
-
-    # 最多得票数
-    max_votes = max(vote_counts.values()) if vote_counts else 0
-    # 最多得票者（複数の可能性）
-    top_voted = [slot for slot, count in vote_counts.items() if count == max_votes]
-
-    # 勝利判定
-    wolf_caught = wolf_slot in top_voted
-
-    # スコア計算
+    # 保存済みの結果を返す
     import json
-    current_scores = json.loads(room["scores"]) if room["scores"] else {}
-
-    for player in room_players:
-        slot = player["player_slot"]
-        slot_str = str(slot)
-
-        if slot_str not in current_scores:
-            current_scores[slot_str] = 0
-
-        # 人狼が捕まった場合
-        if wolf_caught:
-            if slot == wolf_slot:
-                # 人狼は減点
-                current_scores[slot_str] -= 2
-            else:
-                # 村人は加点
-                current_scores[slot_str] += 1
-        else:
-            # 人狼が逃げた場合
-            if slot == wolf_slot:
-                # 人狼は加点
-                current_scores[slot_str] += 3
-            else:
-                # 村人は減点
-                current_scores[slot_str] -= 1
-
-    # スコアを保存
-    room["scores"] = json.dumps(current_scores)
-    room["updated_at"] = datetime.now().isoformat()
-
-    # 全プレイヤーの手札を生成（結果表示用）
-    all_hands = {}
-    for player in room_players:
-        slot = player["player_slot"]
-        hand = generate_hand(slot, room["round_seed"])
-        all_hands[str(slot)] = hand
+    print(f"[calculate_results] Returning cached results", file=sys.stderr)
 
     return {
-        "wolf_slot": wolf_slot,
-        "top_voted": top_voted,
-        "wolf_caught": wolf_caught,
-        "scores": current_scores,
-        "vote_counts": vote_counts,
-        "all_hands": all_hands,
+        "wolf_slot": room.get("last_wolf_slot"),
+        "top_voted": json.loads(room.get("last_top_voted", "[]")),
+        "wolf_caught": room.get("last_wolf_caught"),
+        "scores": json.loads(room.get("last_round_scores", "{}")),
+        "total_scores": json.loads(room["scores"]) if room["scores"] else {},
+        "vote_counts": json.loads(room.get("last_vote_counts", "{}")),
+        "all_hands": json.loads(room.get("last_all_hands", "{}")),
         "wolf_axis": room["wolf_axis_payload"],
         "normal_axis": room["axis_payload"]
     }
@@ -643,6 +686,9 @@ async def start_next_round(room_code: str):
     room["wolf_axis_payload"] = wolf_axis
     room["updated_at"] = now.isoformat()
     room["last_activity_at"] = now.isoformat()
+
+    # 結果計算フラグをリセット
+    room["round_results_calculated"] = False
 
     # 前ラウンドのカードと投票をクリア
     if room_code in cards:

@@ -255,7 +255,10 @@ def generate_axis_pair(themes: list[str], seed: int) -> dict:
 
 def generate_wolf_axis_pair(normal_axis: dict, themes: list[str], seed: int) -> dict:
     """
-    人狼用の軸ペアを生成（横軸は同じ、縦軸だけ変える）
+    人狼用の軸ペアを生成
+    - パターンA (40%): 縦軸だけ変更
+    - パターンB (40%): 横軸だけ変更
+    - パターンC (20%): 両軸とも変更
     """
     valid_axes = [
         axis for axis in AXIS_LABELS
@@ -265,22 +268,81 @@ def generate_wolf_axis_pair(normal_axis: dict, themes: list[str], seed: int) -> 
     if len(valid_axes) < 3:
         raise ValueError('人狼用の軸を生成できません')
 
-    # 横軸は同じにして、縦軸だけ変える
+    # パターン選択（0-9の値で確率分布）
+    # 0-3: パターンA (40%)
+    # 4-7: パターンB (40%)
+    # 8-9: パターンC (20%)
+    pattern_seed = (seed * 31 + 47) % 10
+
     wolf_seed = seed * 31 + 47
-    new_vertical_index = wolf_seed % len(valid_axes)
 
-    # 既存の軸と被らないようにする
-    max_attempts = 100
-    attempts = 0
-    while (
-        (valid_axes[new_vertical_index]['id'] == normal_axis['vertical']['id'] or
-         valid_axes[new_vertical_index]['id'] == normal_axis['horizontal']['id']) and
-        attempts < max_attempts
-    ):
-        new_vertical_index = (new_vertical_index + 1) % len(valid_axes)
-        attempts += 1
+    if pattern_seed < 4:
+        # パターンA: 縦軸だけ変更
+        new_vertical_index = wolf_seed % len(valid_axes)
 
-    return {
-        'horizontal': normal_axis['horizontal'],
-        'vertical': valid_axes[new_vertical_index]
-    }
+        # 既存の軸と被らないようにする
+        max_attempts = 100
+        attempts = 0
+        while (
+            (valid_axes[new_vertical_index]['id'] == normal_axis['vertical']['id'] or
+             valid_axes[new_vertical_index]['id'] == normal_axis['horizontal']['id']) and
+            attempts < max_attempts
+        ):
+            new_vertical_index = (new_vertical_index + 1) % len(valid_axes)
+            attempts += 1
+
+        return {
+            'horizontal': normal_axis['horizontal'],
+            'vertical': valid_axes[new_vertical_index]
+        }
+
+    elif pattern_seed < 8:
+        # パターンB: 横軸だけ変更
+        new_horizontal_index = wolf_seed % len(valid_axes)
+
+        # 既存の軸と被らないようにする
+        max_attempts = 100
+        attempts = 0
+        while (
+            (valid_axes[new_horizontal_index]['id'] == normal_axis['horizontal']['id'] or
+             valid_axes[new_horizontal_index]['id'] == normal_axis['vertical']['id']) and
+            attempts < max_attempts
+        ):
+            new_horizontal_index = (new_horizontal_index + 1) % len(valid_axes)
+            attempts += 1
+
+        return {
+            'horizontal': valid_axes[new_horizontal_index],
+            'vertical': normal_axis['vertical']
+        }
+
+    else:
+        # パターンC: 両軸とも変更
+        new_horizontal_index = wolf_seed % len(valid_axes)
+        new_vertical_index = (wolf_seed * 7 + 13) % len(valid_axes)
+
+        # 既存の軸と被らないようにする
+        max_attempts = 100
+        attempts = 0
+        while (
+            (valid_axes[new_horizontal_index]['id'] == normal_axis['horizontal']['id'] or
+             valid_axes[new_horizontal_index]['id'] == normal_axis['vertical']['id']) and
+            attempts < max_attempts
+        ):
+            new_horizontal_index = (new_horizontal_index + 1) % len(valid_axes)
+            attempts += 1
+
+        attempts = 0
+        while (
+            (valid_axes[new_vertical_index]['id'] == normal_axis['vertical']['id'] or
+             valid_axes[new_vertical_index]['id'] == normal_axis['horizontal']['id'] or
+             valid_axes[new_vertical_index]['id'] == valid_axes[new_horizontal_index]['id']) and
+            attempts < max_attempts
+        ):
+            new_vertical_index = (new_vertical_index + 1) % len(valid_axes)
+            attempts += 1
+
+        return {
+            'horizontal': valid_axes[new_horizontal_index],
+            'vertical': valid_axes[new_vertical_index]
+        }

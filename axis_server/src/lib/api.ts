@@ -183,6 +183,7 @@ export const api = {
     top_voted: number[];
     wolf_caught: boolean;
     scores: Record<string, number>;
+    total_scores: Record<string, number>;
     vote_counts: Record<number, number>;
     all_hands: Record<string, string[]>;
     wolf_axis: any;

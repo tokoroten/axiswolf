@@ -24,6 +24,23 @@ const getWsBase = () => {
   return WS_BASE;
 };
 
+// トークンを取得するヘルパー関数
+const getToken = (): string | null => {
+  return localStorage.getItem('online_player_token');
+};
+
+// 認証ヘッダーを取得するヘルパー関数
+const getAuthHeaders = (additionalHeaders: Record<string, string> = {}): Record<string, string> => {
+  const token = getToken();
+  const headers: Record<string, string> = { ...additionalHeaders };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  return headers;
+};
+
 export interface Room {
   room_code: string;
   phase: string;
@@ -123,7 +140,7 @@ export const api = {
   ) {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/phase`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
         phase,
         axis_payload: axisPayload,
@@ -138,6 +155,7 @@ export const api = {
   async leaveRoom(roomCode: string, playerId: string) {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/leave?player_id=${playerId}`, {
       method: 'POST',
+      headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Failed to leave room');
     return res.json();
@@ -152,7 +170,7 @@ export const api = {
   ) {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/cards?player_id=${playerId}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ card_id: cardId, quadrant, offsets }),
     });
     if (!res.ok) throw new Error('Failed to place card');
@@ -162,7 +180,7 @@ export const api = {
   async submitVote(roomCode: string, playerId: string, targetSlot: number) {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/vote?player_id=${playerId}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ target_slot: targetSlot }),
     });
     if (!res.ok) throw new Error('Failed to submit vote');
@@ -176,7 +194,9 @@ export const api = {
   },
 
   async getHand(roomCode: string, playerId: string): Promise<{ hand: string[]; player_slot: number }> {
-    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/hand?player_id=${playerId}`);
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/hand?player_id=${playerId}`, {
+      headers: getAuthHeaders(),
+    });
     if (!res.ok) throw new Error('Failed to get hand');
     return res.json();
   },
@@ -207,7 +227,7 @@ export const api = {
   }> {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/next_round`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     });
     if (!res.ok) throw new Error('Failed to start next round');
     return res.json();
@@ -220,6 +240,13 @@ export const api = {
     if (playerId) {
       params.append('player_id', playerId);
     }
+
+    // トークンをクエリパラメータに追加（WebSocket用）
+    const token = getToken();
+    if (token) {
+      params.append('token', token);
+    }
+
     params.append('load_history', loadHistory.toString());
 
     url += `?${params.toString()}`;
@@ -229,7 +256,7 @@ export const api = {
   async updateThemes(roomCode: string, themes: string[]): Promise<{ success: boolean; themes: string[] }> {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/themes`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ themes }),
     });
     if (!res.ok) throw new Error('Failed to update themes');

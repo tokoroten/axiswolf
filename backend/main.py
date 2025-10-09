@@ -1220,11 +1220,6 @@ async def websocket_endpoint(
         print(f"[WebSocket] エラー: {e}")
         manager.disconnect(websocket, room_code)
 
-@app.on_event("startup")
-async def startup_event():
-    """アプリケーション起動時に定期クリーンアップタスクを開始"""
-    asyncio.create_task(periodic_cleanup())
-
 async def periodic_cleanup():
     """24時間ごとに古いルームをクリーンアップ"""
     while True:

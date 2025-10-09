@@ -138,7 +138,10 @@ export const api = {
     wolfAxisPayload?: AxisPayload,
     roundSeed?: string
   ) {
-    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/phase`, {
+    const playerId = localStorage.getItem('online_player_id');
+    if (!playerId) throw new Error('Player ID not found');
+
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/phase?player_id=${playerId}`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({
@@ -225,7 +228,10 @@ export const api = {
     round: number;
     round_seed: string;
   }> {
-    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/next_round`, {
+    const playerId = localStorage.getItem('online_player_id');
+    if (!playerId) throw new Error('Player ID not found');
+
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/next_round?player_id=${playerId}`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     });
@@ -254,7 +260,10 @@ export const api = {
   },
 
   async updateThemes(roomCode: string, themes: string[]): Promise<{ success: boolean; themes: string[] }> {
-    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/themes`, {
+    const playerId = localStorage.getItem('online_player_id');
+    if (!playerId) throw new Error('Player ID not found');
+
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/themes?player_id=${playerId}`, {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ themes }),

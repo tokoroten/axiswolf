@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
+from contextlib import asynccontextmanager
 import random
 import asyncio
 import json
@@ -13,7 +14,26 @@ import sys
 from pathlib import Path
 from axis_data import generate_axis_pair, generate_wolf_axis_pair
 
-app = FastAPI()
+# ライフサイクルイベント管理
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 起動時の処理
+    print("[STARTUP] アプリケーション起動中...")
+    # 定期クリーンアップタスクを開始
+    cleanup_task = asyncio.create_task(periodic_cleanup())
+    print("[STARTUP] 定期クリーンアップタスク開始")
+
+    yield  # アプリケーション実行中
+
+    # シャットダウン時の処理
+    print("[SHUTDOWN] アプリケーション終了中...")
+    cleanup_task.cancel()
+    try:
+        await cleanup_task
+    except asyncio.CancelledError:
+        print("[SHUTDOWN] クリーンアップタスク停止")
+
+app = FastAPI(lifespan=lifespan)
 
 # トークン認証を有効化するかどうか（環境変数で制御）
 REQUIRE_TOKEN_AUTH = os.getenv("REQUIRE_TOKEN_AUTH", "false").lower() == "true"

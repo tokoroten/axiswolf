@@ -74,20 +74,6 @@ export default function OnlineGame() {
     }
   }, [roomCode]);
 
-  // プレイヤー退出処理
-  const handleLeaveRoom = async () => {
-    if (!roomCode) return;
-
-    const savedPlayerId = localStorage.getItem('online_player_id');
-    if (savedPlayerId) {
-      try {
-        await api.leaveRoom(roomCode, savedPlayerId);
-      } catch (error) {
-        console.error('[OnlineGame] Failed to leave room:', error);
-      }
-    }
-  };
-
   // 既に参加済みかチェック
   const isJoined = playerSlot !== null && room !== null;
 

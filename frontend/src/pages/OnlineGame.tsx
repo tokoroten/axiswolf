@@ -7,14 +7,15 @@ import GameRules from '../components/GameRules';
 import PlayerAvatar from '../components/PlayerAvatar';
 import ChatPanel from '../components/ChatPanel';
 import { api } from '../lib/api';
+import type { AxisPayload } from '../types';
 import QRCode from 'qrcode';
 
 export default function OnlineGame() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
-  const { room, players, placedCards, votes, isHost, playerSlot, playerId, ws, updatePhase, placeCard, submitVote, fetchVotes, fetchHand, calculateResults, startNextRound } = useGame();
+  const { room, players, placedCards, votes, isHost, playerSlot, playerId, ws, updatePhase, updateThemes, placeCard, submitVote, fetchVotes, fetchHand, calculateResults, startNextRound } = useGame();
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
-  const [myAxis, setMyAxis] = useState<any>(null);
+  const [myAxis, setMyAxis] = useState<AxisPayload | null>(null);
   const [myHand, setMyHand] = useState<string[]>([]);
   const [draggedCard, setDraggedCard] = useState<{ cardId: string; isPlaced: boolean } | null>(null);
   const lastRoundSeedRef = useRef<string | null>(null);
@@ -27,12 +28,14 @@ export default function OnlineGame() {
     total_scores: Record<string, number>;
     vote_counts: Record<number, number>;
     all_hands: Record<string, string[]>;
-    wolf_axis: any;
-    normal_axis: any;
+    wolf_axis: AxisPayload;
+    normal_axis: AxisPayload;
   } | null>(null);
   const [showRules, setShowRules] = useState(false);
   const [isChatCollapsed, setIsChatCollapsed] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [resultsPhaseStartTime, setResultsPhaseStartTime] = useState<number | null>(null);
+  const [shouldBlinkNextRound, setShouldBlinkNextRound] = useState(false);
 
   // roomCodeがない場合、LocalStorageから復元を試みる
   useEffect(() => {
@@ -175,6 +178,31 @@ export default function OnlineGame() {
         });
     }
   }, [room?.phase, gameResults, calculateResults]);
+
+  // resultsフェーズに入ったら開始時刻を記録
+  useEffect(() => {
+    if (room?.phase === 'results') {
+      setResultsPhaseStartTime(Date.now());
+      setShouldBlinkNextRound(false);
+    } else {
+      setResultsPhaseStartTime(null);
+      setShouldBlinkNextRound(false);
+    }
+  }, [room?.phase]);
+
+  // 30秒経過したら明滅を開始
+  useEffect(() => {
+    if (resultsPhaseStartTime === null) return;
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - resultsPhaseStartTime;
+      if (elapsed >= 30000) {
+        setShouldBlinkNextRound(true);
+      }
+    }, 1000); // 1秒ごとにチェック
+
+    return () => clearInterval(interval);
+  }, [resultsPhaseStartTime]);
 
   const handleStartGame = async () => {
     if (!isHost || !roomCode) return;
@@ -359,7 +387,15 @@ export default function OnlineGame() {
                     }
                   }
                 }}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded font-bold transition-colors whitespace-nowrap"
+                className={`px-4 py-2 rounded font-bold whitespace-nowrap transition-all ${
+                  shouldBlinkNextRound
+                    ? 'bg-green-500 hover:bg-green-600 shadow-[0_0_25px_rgba(34,197,94,1)]'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+                style={shouldBlinkNextRound ? {
+                  animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                  boxShadow: '0 0 25px rgba(34, 197, 94, 1), 0 0 50px rgba(34, 197, 94, 0.5)',
+                } : undefined}
               >
                 次のラウンドへ
               </button>
@@ -404,6 +440,107 @@ export default function OnlineGame() {
 
         {room.phase === 'lobby' && (
           <>
+            {/* カードセット選択 */}
+            {isHost && (
+              <div className="bg-gradient-to-r from-green-900 to-teal-900 p-4 rounded mb-4 border-2 border-green-500">
+                <h2 className="font-bold mb-3 text-yellow-300">🎴 カードセット選択</h2>
+                <p className="text-sm text-gray-300 mb-3">使用するカードのテーマを選んでください（複数選択可）</p>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {[
+                    { id: 'food', label: '食べ物', icon: '🍕' },
+                    { id: 'daily', label: '日用品', icon: '📱' },
+                    { id: 'entertainment', label: 'エンタメ', icon: '🎮' },
+                    { id: 'animal', label: '動物', icon: '🐶' },
+                    { id: 'place', label: '場所', icon: '🏙️' },
+                    { id: 'vehicle', label: '乗り物', icon: '🚗' },
+                    { id: 'sport', label: 'スポーツ', icon: '⚽' },
+                  ].map((theme) => {
+                    const currentThemes = room.themes ? JSON.parse(room.themes) : ['food', 'daily', 'entertainment'];
+                    const isSelected = currentThemes.includes(theme.id);
+
+                    return (
+                      <button
+                        key={theme.id}
+                        onClick={async () => {
+                          const newThemes = isSelected
+                            ? currentThemes.filter((t: string) => t !== theme.id)
+                            : [...currentThemes, theme.id];
+
+                          // 最低1つは選択する必要がある
+                          if (newThemes.length === 0) {
+                            alert('最低1つのテーマを選択してください');
+                            return;
+                          }
+
+                          try {
+                            await updateThemes(newThemes);
+                          } catch (error) {
+                            console.error('Failed to update themes:', error);
+                            alert('テーマの更新に失敗しました');
+                          }
+                        }}
+                        className={`p-3 rounded-lg font-medium transition-all border-2 ${
+                          isSelected
+                            ? 'bg-green-600 border-green-400 text-white shadow-lg'
+                            : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">{theme.icon}</div>
+                        <div className="text-sm">{theme.label}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-3 text-xs text-gray-400">
+                  {(() => {
+                    const currentThemes = room.themes ? JSON.parse(room.themes) : ['food', 'daily', 'entertainment'];
+                    const themeLabels = {
+                      food: '食べ物',
+                      daily: '日用品',
+                      entertainment: 'エンタメ',
+                      animal: '動物',
+                      place: '場所',
+                      vehicle: '乗り物',
+                      sport: 'スポーツ',
+                    };
+                    return `現在の選択: ${currentThemes.map((t: string) => themeLabels[t as keyof typeof themeLabels] || t).join('、')}`;
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* ホスト以外のプレイヤー向け：選択されたテーマ表示 */}
+            {!isHost && (
+              <div className="bg-gray-800 p-4 rounded mb-4 border-2 border-gray-700">
+                <h2 className="font-bold mb-2 text-gray-300">🎴 使用するカードセット</h2>
+                <div className="flex flex-wrap gap-2">
+                  {(() => {
+                    const currentThemes = room.themes ? JSON.parse(room.themes) : ['food', 'daily', 'entertainment'];
+                    const themeInfo = {
+                      food: { label: '食べ物', icon: '🍕' },
+                      daily: { label: '日用品', icon: '📱' },
+                      entertainment: { label: 'エンタメ', icon: '🎮' },
+                      animal: { label: '動物', icon: '🐶' },
+                      place: { label: '場所', icon: '🏙️' },
+                      vehicle: { label: '乗り物', icon: '🚗' },
+                      sport: { label: 'スポーツ', icon: '⚽' },
+                    };
+                    return currentThemes.map((t: string) => {
+                      const info = themeInfo[t as keyof typeof themeInfo];
+                      return (
+                        <div key={t} className="bg-gray-700 px-3 py-2 rounded-lg text-sm">
+                          <span className="mr-1">{info?.icon || '❓'}</span>
+                          <span>{info?.label || t}</span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
+
             <div className="bg-gray-800 p-4 rounded mb-4">
               <h2 className="font-bold mb-2">プレイヤー一覧</h2>
               <ul className="space-y-2">
@@ -637,12 +774,12 @@ export default function OnlineGame() {
               );
             })()}
 
-            {/* ゲームボード表示（最下部） - 村人の軸のみ表示 */}
-            {room.axis_payload && (
+            {/* ゲームボード表示（最下部） - 自分の軸を表示 */}
+            {myAxis && (
               <div>
-                <h3 className="font-bold mb-3">配置状況（村人の軸）</h3>
+                <h3 className="font-bold mb-3">配置状況（あなたの軸）</h3>
                 <GameBoard
-                  axis={typeof room.axis_payload === 'string' ? JSON.parse(room.axis_payload) : room.axis_payload}
+                  axis={myAxis}
                   placedCards={placedCards}
                   players={players}
                   interactive={false}

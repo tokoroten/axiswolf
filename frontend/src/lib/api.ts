@@ -1,3 +1,5 @@
+import type { AxisPayload } from '../types';
+
 // 環境変数から取得、デフォルトは開発環境用
 // 空文字列が明示的に設定されている場合は本番環境（相対パス使用）
 const API_BASE = import.meta.env.VITE_API_BASE !== undefined
@@ -33,6 +35,7 @@ export interface Room {
   wolf_axis_payload: string | null;
   round_seed: string | null;
   scores: string;
+  themes: string | null;
   discussion_deadline: string | null;
   created_at: string;
   updated_at: string;
@@ -98,7 +101,7 @@ export const api = {
     });
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      const error: any = new Error(errorData.detail || 'Failed to join room');
+      const error = new Error(errorData.detail || 'Failed to join room') as Error & { response?: { status: number } };
       error.response = { status: res.status };
       throw error;
     }
@@ -114,8 +117,8 @@ export const api = {
   async updatePhase(
     roomCode: string,
     phase: string,
-    axisPayload?: any,
-    wolfAxisPayload?: any,
+    axisPayload?: AxisPayload,
+    wolfAxisPayload?: AxisPayload,
     roundSeed?: string
   ) {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/phase`, {
@@ -186,8 +189,8 @@ export const api = {
     total_scores: Record<string, number>;
     vote_counts: Record<number, number>;
     all_hands: Record<string, string[]>;
-    wolf_axis: any;
-    normal_axis: any;
+    wolf_axis: AxisPayload;
+    normal_axis: AxisPayload;
   }> {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/calculate_results`, {
       method: 'POST',
@@ -221,5 +224,21 @@ export const api = {
 
     url += `?${params.toString()}`;
     return new WebSocket(url);
+  },
+
+  async updateThemes(roomCode: string, themes: string[]): Promise<{ success: boolean; themes: string[] }> {
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/themes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ themes }),
+    });
+    if (!res.ok) throw new Error('Failed to update themes');
+    return res.json();
+  },
+
+  async getDebugRooms() {
+    const res = await fetch(`${getApiBase()}/debug/rooms`);
+    if (!res.ok) throw new Error('Failed to fetch debug rooms');
+    return res.json();
   },
 };

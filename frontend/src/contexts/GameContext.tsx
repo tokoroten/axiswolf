@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { api, type Room, type Player, type PlacedCard, type Vote } from '../lib/api';
+import type { AxisPayload } from '../types';
 
 interface GameContextType {
   room: Room | null;
@@ -14,7 +15,8 @@ interface GameContextType {
   isHost: boolean;
   joinRoom: (roomCode: string, playerId: string, playerName: string) => Promise<void>;
   createRoom: (roomCode: string, playerId: string, playerName: string) => Promise<void>;
-  updatePhase: (phase: string, axisPayload?: any, wolfAxisPayload?: any, roundSeed?: string) => Promise<void>;
+  updatePhase: (phase: string, axisPayload?: AxisPayload, wolfAxisPayload?: AxisPayload, roundSeed?: string) => Promise<void>;
+  updateThemes: (themes: string[]) => Promise<void>;
   placeCard: (cardId: string, quadrant: number, offsets: { x: number; y: number }) => Promise<void>;
   submitVote: (targetSlot: number) => Promise<void>;
   fetchVotes: () => Promise<void>;
@@ -27,8 +29,8 @@ interface GameContextType {
     total_scores: Record<string, number>;
     vote_counts: Record<number, number>;
     all_hands: Record<string, string[]>;
-    wolf_axis: any;
-    normal_axis: any;
+    wolf_axis: AxisPayload;
+    normal_axis: AxisPayload;
   }>;
   startNextRound: () => Promise<void>;
 }
@@ -217,6 +219,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
             });
             break;
 
+          case 'themes_updated':
+            // テーマが更新されたらルーム情報を再取得
+            api.getRoom(room.room_code).then(({ room: newRoom }) => {
+              setRoom(newRoom);
+            });
+            break;
+
           case 'round_started':
             // 新しいラウンドが始まったらルーム情報を再取得
             api.getRoom(room.room_code).then(({ room: newRoom }) => {
@@ -317,10 +326,18 @@ export function GameProvider({ children }: { children: ReactNode }) {
     console.log('[GameContext] 接続情報をLocalStorageに保存しました');
   };
 
-  const updatePhase = async (phase: string, axisPayload?: any, wolfAxisPayload?: any, roundSeed?: string) => {
+  const updatePhase = async (phase: string, axisPayload?: AxisPayload, wolfAxisPayload?: AxisPayload, roundSeed?: string) => {
     if (!room) return;
     await api.updatePhase(room.room_code, phase, axisPayload, wolfAxisPayload, roundSeed);
     // サーバーから最新のルーム情報を取得（サーバー側で軸が生成される可能性があるため）
+    const { room: updatedRoom } = await api.getRoom(room.room_code);
+    setRoom(updatedRoom);
+  };
+
+  const updateThemes = async (themes: string[]) => {
+    if (!room) return;
+    await api.updateThemes(room.room_code, themes);
+    // サーバーから最新のルーム情報を取得
     const { room: updatedRoom } = await api.getRoom(room.room_code);
     setRoom(updatedRoom);
   };
@@ -381,6 +398,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         joinRoom,
         createRoom,
         updatePhase,
+        updateThemes,
         placeCard,
         submitVote,
         fetchVotes,

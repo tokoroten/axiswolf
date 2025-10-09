@@ -1,5 +1,5 @@
 // テーマシステムの定義
-export type ThemeType = 'food' | 'daily' | 'entertainment' | 'animal' | 'place' | 'vehicle' | 'mixed' | 'random' | 'pack1' | 'pack2' | 'pack3' | 'pack4' | 'pack5';
+export type ThemeType = 'food' | 'daily' | 'entertainment' | 'animal' | 'place' | 'vehicle' | 'sport' | 'mixed' | 'random' | 'pack1' | 'pack2' | 'pack3' | 'pack4' | 'pack5';
 
 export interface Theme {
   id: ThemeType;
@@ -52,6 +52,13 @@ export const themes: Theme[] = [
     name: '乗り物',
     description: '乗り物や交通手段に関するテーマ',
     cardCategories: ['vehicle'],
+    onlineOnly: true
+  },
+  {
+    id: 'sport',
+    name: 'スポーツ',
+    description: 'スポーツや運動に関するテーマ',
+    cardCategories: ['sport'],
     onlineOnly: true
   },
   // 通常プレイ用カードパック（全カテゴリから軸を選択）

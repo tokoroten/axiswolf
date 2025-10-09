@@ -10,6 +10,18 @@ export interface Axis {
   };
 }
 
+// オンラインゲーム用の軸ペイロード型
+export interface AxisPayload {
+  horizontal: {
+    negative: string;
+    positive: string;
+  };
+  vertical: {
+    negative: string;
+    positive: string;
+  };
+}
+
 export interface Mutator {
   id: string;
   name: string;

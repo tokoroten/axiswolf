@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { api } from '../lib/api';
 
 interface DebugRoom {
   room_code: string;
@@ -27,11 +28,7 @@ export default function Debug() {
   const fetchRooms = async () => {
     try {
       setError(null);
-      const res = await fetch('http://localhost:8000/api/debug/rooms');
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
-      const data = await res.json();
+      const data = await api.getDebugRooms();
       setRooms(data.rooms || []);
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';

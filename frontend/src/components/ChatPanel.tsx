@@ -30,6 +30,29 @@ export default function ChatPanel({
   const [hasUnread, setHasUnread] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // 通知音を再生する関数
+  const playNotificationSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      // 音の設定（心地よい通知音）
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(800, audioContext.currentTime); // 800Hz
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime); // ボリューム30%
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15); // 150msでフェードアウト
+
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.15);
+    } catch (error) {
+      console.error('[Chat] 通知音の再生に失敗:', error);
+    }
+  };
+
   // 自動スクロール
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,7 +68,8 @@ export default function ChatPanel({
       const customEvent = event as CustomEvent;
       const data = customEvent.detail;
 
-      console.log('[Chat] メッセージ受信:', data);
+      // 自分のメッセージかどうかをチェック
+      const isOwnMessage = data.player_id === currentPlayerId;
 
       setMessages((prev) => [
         ...prev,
@@ -58,15 +82,20 @@ export default function ChatPanel({
         },
       ]);
 
+      // 自分以外のメッセージの場合のみ通知音を再生
+      if (!isOwnMessage) {
+        playNotificationSound();
+      }
+
       // チャットが閉じている場合は未読マークを付ける
-      if (isCollapsed) {
+      if (isCollapsed && !isOwnMessage) {
         setHasUnread(true);
       }
     };
 
     window.addEventListener('chat-message', handleChatMessage);
     return () => window.removeEventListener('chat-message', handleChatMessage);
-  }, [isCollapsed]);
+  }, [isCollapsed, currentPlayerId]);
 
   // メッセージ送信
   const sendMessage = () => {

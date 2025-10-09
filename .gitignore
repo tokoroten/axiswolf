@@ -38,19 +38,12 @@ ENV/
 *.sqlite3
 uv.lock
 
-# Python card generator
-card_generator_python/output/
-card_generator_python/__pycache__/
-card_generator_python/.venv/
-card_generator_python/*.pdf
-card_generator_python/.env
-card_generator_python/uv.lock
-
 # Backend
 backend/venv/
 backend/.venv/
 backend/__pycache__/
 backend/*.db
+backend/static/
 
 # Generated images and PDFs
 *.pdf

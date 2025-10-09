@@ -274,51 +274,77 @@ export default function OnlineGame() {
               </button>
             )}
 
-            {isHost && room.phase === 'placement' && (
-              <button
-                onClick={async () => {
-                  if (confirm('投票フェーズに進みますか？')) {
-                    await updatePhase('voting');
-                  }
-                }}
-                className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 rounded font-bold transition-colors whitespace-nowrap"
-              >
-                投票フェーズへ
-              </button>
-            )}
-
-            {isHost && room.phase === 'voting' && (
-              <button
-                onClick={async () => {
-                  if (confirm('結果を表示しますか？')) {
-                    try {
-                      await fetchVotes();
-                      // まずフェーズを更新（バックエンドでスコア計算が実行される）
-                      await updatePhase('results');
-                      // その後、計算済みの結果を取得
-                      const results = await calculateResults();
-                      setGameResults({
-                        wolf_slot: results.wolf_slot,
-                        top_voted: results.top_voted,
-                        wolf_caught: results.wolf_caught,
-                        scores: results.scores,
-                        total_scores: results.total_scores,
-                        vote_counts: results.vote_counts,
-                        all_hands: results.all_hands,
-                        wolf_axis: results.wolf_axis,
-                        normal_axis: results.normal_axis,
-                      });
-                    } catch (error) {
-                      console.error('Failed to calculate results:', error);
-                      alert('結果の計算に失敗しました');
+            {isHost && room.phase === 'placement' && (() => {
+              // 全プレイヤーが3枚ずつカードを配置したかチェック
+              const allPlayersPlaced = players.every(player => {
+                const playerCards = placedCards.filter(c => c.player_slot === player.player_slot);
+                return playerCards.length >= 3;
+              });
+              return (
+                <button
+                  onClick={async () => {
+                    if (confirm('投票フェーズに進みますか？')) {
+                      await updatePhase('voting');
                     }
-                  }
-                }}
-                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded font-bold transition-colors whitespace-nowrap"
-              >
-                結果を表示
-              </button>
-            )}
+                  }}
+                  className={`px-4 py-2 rounded font-bold whitespace-nowrap transition-all ${
+                    allPlayersPlaced
+                      ? 'bg-yellow-500 hover:bg-yellow-600 shadow-[0_0_25px_rgba(234,179,8,1)]'
+                      : 'bg-yellow-600 hover:bg-yellow-700'
+                  }`}
+                  style={allPlayersPlaced ? {
+                    animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    boxShadow: '0 0 25px rgba(234, 179, 8, 1), 0 0 50px rgba(234, 179, 8, 0.5)',
+                  } : undefined}
+                >
+                  投票フェーズへ
+                </button>
+              );
+            })()}
+
+            {isHost && room.phase === 'voting' && (() => {
+              const allVoted = votes.length === players.length;
+              return (
+                <button
+                  onClick={async () => {
+                    if (confirm('結果を表示しますか？')) {
+                      try {
+                        await fetchVotes();
+                        // まずフェーズを更新（バックエンドでスコア計算が実行される）
+                        await updatePhase('results');
+                        // その後、計算済みの結果を取得
+                        const results = await calculateResults();
+                        setGameResults({
+                          wolf_slot: results.wolf_slot,
+                          top_voted: results.top_voted,
+                          wolf_caught: results.wolf_caught,
+                          scores: results.scores,
+                          total_scores: results.total_scores,
+                          vote_counts: results.vote_counts,
+                          all_hands: results.all_hands,
+                          wolf_axis: results.wolf_axis,
+                          normal_axis: results.normal_axis,
+                        });
+                      } catch (error) {
+                        console.error('Failed to calculate results:', error);
+                        alert('結果の計算に失敗しました');
+                      }
+                    }
+                  }}
+                  className={`px-4 py-2 rounded font-bold whitespace-nowrap transition-all ${
+                    allVoted
+                      ? 'bg-purple-500 hover:bg-purple-600 shadow-[0_0_25px_rgba(168,85,247,1)]'
+                      : 'bg-purple-600 hover:bg-purple-700'
+                  }`}
+                  style={allVoted ? {
+                    animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    boxShadow: '0 0 25px rgba(168, 85, 247, 1), 0 0 50px rgba(168, 85, 247, 0.5)',
+                  } : undefined}
+                >
+                  結果を表示
+                </button>
+              );
+            })()}
 
             {isHost && room.phase === 'results' && (
               <button
@@ -551,20 +577,6 @@ export default function OnlineGame() {
             <h2 className="font-bold mb-4 text-xl">投票フェーズ</h2>
             <p className="text-gray-300 mb-4">誰が人狼だと思うか投票してください</p>
 
-            {/* 投票進行状況 */}
-            <div className="bg-gray-700/50 p-3 rounded-lg mb-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">投票状況</span>
-                <span className="text-sm text-gray-400">{votes.length} / {players.length}</span>
-              </div>
-              <div className="h-2 bg-gray-600 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-blue-500 transition-all"
-                  style={{ width: `${(votes.length / players.length) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-
             {/* 自分が投票済みかチェック */}
             {(() => {
               const myVote = votes.find(v => v.voter_slot === playerSlot);
@@ -647,6 +659,21 @@ export default function OnlineGame() {
             <h2 className="font-bold mb-4 text-xl">投票結果</h2>
 
             <div className="space-y-4">
+              {/* 勝利表示を最上部に */}
+              <div className="bg-blue-900/50 p-4 rounded-lg">
+                {gameResults.wolf_caught ? (
+                  <div>
+                    <div className="text-green-400 font-bold text-xl mb-2">✓ 村人の勝利！</div>
+                    <div className="text-gray-300">人狼が最多得票を獲得しました</div>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="text-red-400 font-bold text-xl mb-2">✗ 人狼の勝利！</div>
+                    <div className="text-gray-300">人狼は発見されませんでした</div>
+                  </div>
+                )}
+              </div>
+
               {/* デバッグ情報 */}
               {!gameResults.normal_axis && !gameResults.wolf_axis && (
                 <div className="bg-red-900/30 p-4 rounded-lg border-2 border-red-500">
@@ -687,27 +714,13 @@ export default function OnlineGame() {
                         <div className={`font-bold text-lg ${roundScore >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                           {roundScore >= 0 ? '+' : ''}{roundScore}点
                         </div>
-                        <div className="text-xs text-gray-400">
-                          累積: {totalScore}点
+                        <div className="font-bold text-xl text-white mt-1">
+                          累積：{totalScore}点
                         </div>
                       </div>
                     </div>
                   );
                 })}
-              </div>
-
-              <div className="bg-blue-900/50 p-4 rounded-lg">
-                {gameResults.wolf_caught ? (
-                  <div>
-                    <div className="text-green-400 font-bold text-xl mb-2">✓ 村人の勝利！</div>
-                    <div className="text-gray-300">人狼が最多得票を獲得しました</div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="text-red-400 font-bold text-xl mb-2">✗ 人狼の勝利！</div>
-                    <div className="text-gray-300">人狼は発見されませんでした</div>
-                  </div>
-                )}
               </div>
 
               {/* 全プレイヤーの手札 */}
@@ -744,33 +757,6 @@ export default function OnlineGame() {
                   </div>
                 </div>
               )}
-
-              {/* 累積スコア表示 */}
-              {room.scores && (() => {
-                const totalScores = JSON.parse(room.scores);
-                return (
-                  <div className="bg-gray-700/50 p-4 rounded-lg">
-                    <h3 className="font-bold mb-3">累積スコア</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                      {players.map((player) => {
-                        const totalScore = totalScores[player.player_slot.toString()] || 0;
-                        return (
-                          <div key={player.player_slot} className="flex items-center gap-2">
-                            <div
-                              className="w-6 h-6 rounded-full border border-white"
-                              style={{ backgroundColor: getPlayerColorStyle(player.player_slot) }}
-                            ></div>
-                            <span className="text-sm">{player.player_name}</span>
-                            <span className={`font-bold ml-auto ${totalScore >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                              {totalScore >= 0 ? '+' : ''}{totalScore}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
 
               {/* ゲームボード（最下部）（村人の軸 + 人狼の軸を1つのボードに表示） */}
               {gameResults.normal_axis && gameResults.wolf_axis ? (

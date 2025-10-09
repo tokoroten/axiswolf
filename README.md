@@ -2,7 +2,7 @@
 
 軸がズレた人狼を見つけ出せ！4象限の軸を使った新感覚の正体隠匿ゲーム。
 
-🎮 **プレイ**: https://tokoroten.github.io/axiswolf/
+🎮 **プレイ**: https://axiswolf.onrender.com/
 
 ## 🎯 ゲーム概要
 
@@ -14,6 +14,9 @@
 - 🎯 3ラウンド制
 - 🏆 得点システム搭載
 - 🎚️ 難易度選択可能（一般向け/インテリ向け）
+- 🎨 8種類のテーマ（食べ物、日常、娯楽、動物、場所、乗り物、スポーツ、カオス）
+- 🔄 ラウンドごとにテーマが変わる動的な体験
+- 🌐 WebSocketによるリアルタイム同期
 
 ## 🚀 セットアップ
 
@@ -68,14 +71,18 @@
 - React Router
 
 ### バックエンド（オンライン対戦）
-- FastAPI
+- FastAPI 0.115+
 - Uvicorn (ASGI server)
 - WebSockets（リアルタイム通信）
+- Python 3.11+
+- Pydantic（データバリデーション）
 - オンメモリストレージ（再起動で揮発）
 
 ### デプロイ
-- GitHub Pages
-- GitHub Actions (自動デプロイ)
+- Render（バックエンド + フロントエンド）
+  - バックエンド: FastAPI + Uvicorn
+  - フロントエンド: 静的ファイルとしてバックエンドから配信
+  - 自動デプロイ: mainブランチへのプッシュで自動更新
 
 ## 💻 開発
 
@@ -90,6 +97,8 @@ npm run dev
 
 アクセス: http://localhost:5173/
 
+注: Windows環境では Tailwind CSS v4 のネイティブモジュール (`@tailwindcss/oxide-win32-x64-msvc` 等) が自動的にインストールされます。
+
 #### バックエンド（オンライン対戦用）
 ```bash
 cd backend
@@ -97,6 +106,7 @@ uv run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 API: http://localhost:8000/
+API ドキュメント: http://localhost:8000/docs
 
 ### ビルド
 ```bash
@@ -105,7 +115,32 @@ npm run build
 ```
 
 ### デプロイ
-mainブランチへのプッシュで自動的にGitHub Pagesへデプロイされます。
+mainブランチへのプッシュで自動的にRenderへデプロイされます。
+
+Renderでのビルドプロセス:
+1. フロントエンドの依存関係インストール (`npm ci`)
+2. フロントエンドのビルド (`npm run build`)
+3. 静的ファイルを `backend/static/` にコピー
+4. Pythonの依存関係インストール (`pip install -r requirements.txt`)
+
+詳細は `backend/build.sh` を参照してください。
+
+## 🔌 主要なAPIエンドポイント
+
+### REST API
+- `GET /api/health` - ヘルスチェック
+- `POST /api/rooms/create` - ルーム作成
+- `POST /api/rooms/join` - ルーム参加
+- `GET /api/rooms/{room_code}` - ルーム情報取得
+- `POST /api/rooms/{room_code}/phase` - ゲームフェーズ更新
+- `POST /api/rooms/{room_code}/cards` - カード配置
+- `POST /api/rooms/{room_code}/vote` - 投票
+- `POST /api/rooms/{room_code}/calculate_results` - 結果計算
+
+### WebSocket
+- `WS /ws/{room_code}` - リアルタイム通信（プレイヤー接続・状態同期）
+
+詳細なAPIドキュメントは開発サーバー起動後 http://localhost:8000/docs で確認できます。
 
 ## 📁 プロジェクト構成
 
@@ -132,6 +167,21 @@ yonshogen/
 - 一人だけ配置の理由が不自然な人を探す
 - 複数のカードで一貫してズレている人を見つける
 - 人狼も自然に振る舞おうとするので注意深く観察
+
+## 🎨 テーマシステム
+
+ゲームでは以下の8種類のテーマからカードと軸が生成されます:
+
+1. **食べ物 (food)** - 料理、食材、飲み物など
+2. **日常 (daily)** - 日用品、家電、生活用品など
+3. **娯楽 (entertainment)** - 映画、音楽、本、ゲームなど
+4. **動物 (animal)** - 動物、虫、ペットなど
+5. **場所 (place)** - 都市、建物、観光地など
+6. **乗り物 (vehicle)** - 車、電車、飛行機など
+7. **スポーツ (sport)** - 球技、格闘技、ウィンタースポーツなど
+8. **カオス (chaos)** - 全テーマが混在したランダムモード
+
+各ラウンドで選択されたテーマに基づいてカードプールと軸が一貫性を持って生成されます。ゲーム開始時に複数のテーマを選択でき、各ラウンドでランダムに1つのテーマが選ばれます。
 
 ## 📝 ライセンス
 

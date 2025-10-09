@@ -294,8 +294,12 @@ def generate_wolf_axis_pair(normal_axis: dict, themes: list[str], seed: int) -> 
     - パターンB (40%): 横軸だけ変更
     - パターンC (20%): 両軸とも変更
     各軸の正負はランダムに反転される
+
+    注意: normal_axisと同じテーマプールから選択する
     """
-    rng = random.Random(seed)
+    # 人狼用のシードを生成（元のシードに固定値を加算）
+    wolf_seed = seed + 99999
+    rng = random.Random(wolf_seed)
 
     # カオスモードチェック
     if 'chaos' in themes:
@@ -306,9 +310,11 @@ def generate_wolf_axis_pair(normal_axis: dict, themes: list[str], seed: int) -> 
             axis for axis in AXIS_LABELS
             if themes[0] in axis['themes']
         ]
-    # 複数テーマの場合: 1つ選択（normal_axisと同じテーマ）
+    # 複数テーマの場合: normal_axisと同じテーマを使用
     else:
-        selected_theme = rng.choice(themes)
+        # normal_axisのテーマを推定（元のシードで選択されたテーマ）
+        normal_rng = random.Random(seed)
+        selected_theme = normal_rng.choice(themes)
         valid_axes = [
             axis for axis in AXIS_LABELS
             if selected_theme in axis['themes']

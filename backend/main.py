@@ -85,10 +85,10 @@ CARD_POOL_BY_THEME = {
         'Twitter', 'ポッドキャスト', 'ラジオ', 'テレビ番組', 'お笑い', 'ミュージカル', '演劇', 'コンサート', 'フェス', 'カラオケ',
         'Netflix', 'Disney+', 'Amazon Prime', 'Hulu', 'Spotify', 'Apple Music', 'PlayStation', 'Nintendo Switch', 'Xbox', 'Steam',
         'VR', 'AR', 'eスポーツ', 'ボードゲーム', 'カードゲーム', 'パズル', 'クイズ', 'なぞなぞ', 'ダンス', 'DJ',
-        'ライブ配信', 'Vtuber', 'アイドル', '声優', 'コスプレ', '同人誌', 'コミケ', 'オタク', 'サーカス', '手品',
+        'ライブ配信', 'Vtuber', 'アイドル', '声優', 'コスプレ', '同人誌', 'コミケ', 'サーカス', '手品',
         '落語', '漫才', 'コント', '歌舞伎', '能', '狂言', '宝塚', 'オペラ', 'バレエ', 'ジャズ',
-        'ロック', 'ポップス', 'クラシック', 'ヒップホップ', 'EDM', 'K-POP', 'J-POP', '演歌', 'フォークダンス', 'レゲエ',
-        'ブルース', 'カントリー', 'ソウル', 'R&B', 'メタル', 'パンク', 'テクノ', 'アンビエント', 'ワールドミュージック', 'サウンドトラック',
+        'ロック', 'ポップス', 'クラシック（音楽）', 'ヒップホップ', 'EDM', 'K-POP', 'J-POP', '演歌', 'フォークダンス', 'レゲエ',
+        'ブルース', 'カントリー（音楽）', 'ソウル（音楽）', 'R&B', 'メタル（音楽）', 'パンク', 'テクノ（音楽）', 'アンビエント（音楽）', 'ワールドミュージック', 'サウンドトラック',
         'ピアノ', 'ギター', 'ドラム', 'ベース', 'バイオリン', 'サックス', 'トランペット', 'フルート', 'ハーモニカ', 'ウクレレ',
         '三味線', '琴', '尺八', '太鼓', 'レコード', 'CD', 'カセットテープ', 'MD', 'ラジカセ', 'ウォークマン',
     ],
@@ -165,6 +165,27 @@ CARD_POOL_BY_THEME = {
 CARD_POOL = []
 for theme_cards in CARD_POOL_BY_THEME.values():
     CARD_POOL.extend(theme_cards)
+
+def select_theme_from_list(themes: List[str], seed: int) -> str:
+    """
+    テーマリストとシードから1つのテーマを決定
+
+    - 'chaos' が含まれる場合: 'chaos'を返す
+    - 単一テーマの場合: そのテーマを返す
+    - 複数テーマの場合: seedで1つランダムに選択
+    """
+    if not themes:
+        return 'chaos'
+
+    if 'chaos' in themes:
+        return 'chaos'
+
+    if len(themes) == 1:
+        return themes[0]
+
+    # 複数テーマの場合: seedで1つ選択
+    rng = random.Random(seed)
+    return rng.choice(themes)
 
 def get_filtered_card_pool(themes: Optional[List[str]] = None, seed: Optional[int] = None) -> List[str]:
     """
@@ -388,6 +409,7 @@ async def create_room(req: CreateRoomRequest):
         "axis_payload": None,
         "wolf_axis_payload": None,
         "round_seed": None,
+        "selected_theme": None,  # ラウンドごとに決定されたテーマ
         "scores": "{}",
         "themes": json.dumps(['food', 'daily', 'entertainment']),  # デフォルトテーマ
         "created_at": now.isoformat(),
@@ -682,6 +704,10 @@ async def update_phase(room_code: str, req: UpdatePhaseRequest):
 
         seed = int(req.round_seed) if req.round_seed else random.randint(0, 10000)
 
+        # テーマを決定して保存
+        selected_theme = select_theme_from_list(themes, seed)
+        rooms[room_code]["selected_theme"] = selected_theme
+
         # 通常の軸と人狼用の軸を生成
         normal_axis = generate_axis_pair(themes, seed)
         wolf_axis = generate_wolf_axis_pair(normal_axis, themes, seed)
@@ -880,6 +906,9 @@ async def start_next_round(room_code: str):
     else:
         themes = ['food', 'daily', 'entertainment']
 
+    # テーマを決定して保存
+    selected_theme = select_theme_from_list(themes, new_seed)
+
     normal_axis = generate_axis_pair(themes, new_seed)
     wolf_axis = generate_wolf_axis_pair(normal_axis, themes, new_seed)
 
@@ -888,6 +917,7 @@ async def start_next_round(room_code: str):
     room["active_round"] = new_round
     room["phase"] = "placement"
     room["round_seed"] = str(new_seed)
+    room["selected_theme"] = selected_theme  # テーマを保存
     room["axis_payload"] = normal_axis
     room["wolf_axis_payload"] = wolf_axis
     room["updated_at"] = now.isoformat()

@@ -101,12 +101,12 @@ export function VoiceChatProvider({ children }: VoiceChatProviderProps) {
       wsRef.current = ws;
       myPlayerIdRef.current = playerId;
 
-      // マイク許可を取得（エコーキャンセレーション無効化）
+      // マイク許可を取得（標準設定）
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
         },
         video: false
       });

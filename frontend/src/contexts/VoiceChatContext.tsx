@@ -46,6 +46,7 @@ export function VoiceChatProvider({ children }: { children: ReactNode }) {
   const wsRef = useRef<WebSocket | null>(null);
   const myPlayerIdRef = useRef<string | null>(null);
   const remoteGainNodesRef = useRef<Map<string, GainNode>>(new Map());
+  const remoteAudioElsRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const analyserNodesRef = useRef<Map<string, AnalyserNode>>(new Map());
   const audioLevelIntervalRef = useRef<number | null>(null);
   const micLevelIntervalRef = useRef<number | null>(null);
@@ -79,6 +80,9 @@ export function VoiceChatProvider({ children }: { children: ReactNode }) {
     remoteGainNodesRef.current.forEach((gain) => {
       gain.gain.value = Math.min(3.0, newVolume / 100);
     });
+    remoteAudioElsRef.current.forEach((el) => {
+      el.volume = Math.min(3.0, newVolume / 100);
+    });
   };
 
   const setMicGain = (newGain: number) => {
@@ -87,20 +91,52 @@ export function VoiceChatProvider({ children }: { children: ReactNode }) {
   };
 
   const playRemoteStream = (stream: MediaStream, peerId: string) => {
-    if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const ac = audioContextRef.current!;
-    if (ac.state === 'suspended') ac.resume();
-    const source = ac.createMediaStreamSource(stream);
-    const gain = ac.createGain();
-    const analyser = ac.createAnalyser();
-    gain.gain.value = Math.min(3.0, volume / 100);
-    analyser.fftSize = 256;
-    analyser.smoothingTimeConstant = 0.8;
-    source.connect(gain);
-    gain.connect(analyser);
-    analyser.connect(ac.destination);
-    analyserNodesRef.current.set(peerId, analyser);
-    remoteGainNodesRef.current.set(peerId, gain);
+    const useHtmlAudio = ((import.meta as any).env?.VITE_VC_USE_HTML_AUDIO || '') === '1';
+    console.log('[VoiceChat/Play] useHtmlAudio fallback:', useHtmlAudio);
+
+    const tracks = stream.getAudioTracks();
+    console.log('[VoiceChat/Play] Remote stream tracks:', tracks.map(t => ({ id: t.id, kind: t.kind, enabled: t.enabled, muted: (t as any).muted, readyState: t.readyState })));
+
+    if (useHtmlAudio) {
+      // HTMLAudio要素での再生（ブラウザ自動再生制限の回避やデバイス差異の切り分け）
+      let el = remoteAudioElsRef.current.get(peerId);
+      if (!el) {
+        el = document.createElement('audio');
+        el.autoplay = true;
+        (el as any).playsInline = true;
+        el.muted = false;
+        document.body.appendChild(el);
+        remoteAudioElsRef.current.set(peerId, el);
+      }
+      try {
+        // @ts-ignore
+        el.srcObject = stream;
+        el.volume = Math.min(3.0, volume / 100);
+        el.play().catch(err => console.warn('[VoiceChat/Play] HTMLAudio play() blocked:', err));
+      } catch (e) {
+        console.error('[VoiceChat/Play] Failed to bind HTMLAudio:', e);
+      }
+    } else {
+      // WebAudioパイプライン
+      if (!audioContextRef.current) audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ac = audioContextRef.current!;
+      if (ac.state === 'suspended') ac.resume();
+      try {
+        const source = ac.createMediaStreamSource(stream);
+        const gain = ac.createGain();
+        const analyser = ac.createAnalyser();
+        gain.gain.value = Math.min(3.0, volume / 100);
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.8;
+        source.connect(gain);
+        gain.connect(analyser);
+        analyser.connect(ac.destination);
+        analyserNodesRef.current.set(peerId, analyser);
+        remoteGainNodesRef.current.set(peerId, gain);
+      } catch (err) {
+        console.error('[VoiceChat/Play] Failed to create WebAudio pipeline:', err);
+      }
+    }
   };
 
   const initializeVoiceChat = useCallback(async (_roomCode: string, playerId: string, ws: WebSocket | null) => {
@@ -169,7 +205,11 @@ export function VoiceChatProvider({ children }: { children: ReactNode }) {
         call.answer(stream);
         connectionsRef.current.set(call.peer, call);
         attachPcDebug(call);
-        call.on('stream', (remoteStream) => { playRemoteStream(remoteStream, call.peer); setConnectedPeers((p) => [...new Set([...p, call.peer])]); });
+        call.on('stream', (remoteStream) => {
+          console.log('🎵 [VoiceChat/Receive] Incoming stream from:', call.peer);
+          playRemoteStream(remoteStream, call.peer);
+          setConnectedPeers((p) => [...new Set([...p, call.peer])]);
+        });
         call.on('close', () => { connectionsRef.current.delete(call.peer); setConnectedPeers((p) => p.filter((id) => id !== call.peer)); });
         call.on('error', () => { connectionsRef.current.delete(call.peer); setConnectedPeers((p) => p.filter((id) => id !== call.peer)); });
       });
@@ -192,7 +232,11 @@ export function VoiceChatProvider({ children }: { children: ReactNode }) {
       const call = peerRef.current.call(remotePeerId, localStreamRef.current);
       connectionsRef.current.set(remotePeerId, call);
       attachPcDebug(call);
-      call.on('stream', (remoteStream) => { playRemoteStream(remoteStream, remotePeerId); setConnectedPeers((p) => [...new Set([...p, remotePeerId])]); });
+      call.on('stream', (remoteStream) => {
+        console.log('🎵 [VoiceChat/Receive] Remote stream from callee:', remotePeerId);
+        playRemoteStream(remoteStream, remotePeerId);
+        setConnectedPeers((p) => [...new Set([...p, remotePeerId])]);
+      });
       call.on('close', () => { connectionsRef.current.delete(remotePeerId); setConnectedPeers((p) => p.filter((id) => id !== remotePeerId)); });
       call.on('error', () => { connectionsRef.current.delete(remotePeerId); setConnectedPeers((p) => p.filter((id) => id !== remotePeerId)); });
     } catch (e) {
@@ -211,6 +255,9 @@ export function VoiceChatProvider({ children }: { children: ReactNode }) {
     micGainNodeRef.current = null;
     analyserNodesRef.current.clear();
     remoteGainNodesRef.current.clear();
+    // remove any HTMLAudio fallback elements
+    remoteAudioElsRef.current.forEach((el) => { try { el.pause(); el.srcObject = null as any; el.remove(); } catch {} });
+    remoteAudioElsRef.current.clear();
     setIsEnabled(false);
     setIsConnected(false);
     setConnectedPeers([]);

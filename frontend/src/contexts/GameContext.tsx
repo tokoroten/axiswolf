@@ -84,6 +84,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
                 localStorage.removeItem('online_player_id');
                 localStorage.removeItem('online_player_name');
                 localStorage.removeItem('online_player_token');
+                // エラーメッセージを表示してオンラインのトップページに戻る
+                alert('セッションの有効期限が切れました。再度ログインしてください。');
+                window.location.href = '/online';
                 return;
               }
               console.log('[GameContext] トークン検証成功');
@@ -173,6 +176,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
           case 'player_offline':
             // オンライン状態が変更されたらルーム情報を再取得
+            api.getRoom(room.room_code).then(({ players: newPlayers }) => {
+              setPlayers(newPlayers);
+            });
+            break;
+
+          case 'player_removed':
+            // ロビーでオフラインになったプレイヤーが削除された
+            console.log('[GameContext] プレイヤーが削除されました:', message.player_name, 'reason:', message.reason);
+            api.getRoom(room.room_code).then(({ players: newPlayers }) => {
+              setPlayers(newPlayers);
+            });
+            break;
+
+          case 'host_changed':
+            // ホストが変更された
+            console.log('[GameContext] ホストが変更されました:', message.new_host_name);
             api.getRoom(room.room_code).then(({ players: newPlayers }) => {
               setPlayers(newPlayers);
             });

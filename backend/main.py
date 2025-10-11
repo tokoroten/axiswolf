@@ -387,6 +387,9 @@ chat_messages: Dict[str, List[dict]] = {}  # room_code -> チャットメッセ�
 player_tokens: Dict[str, str] = {}  # player_id -> token の対応
 cached_results: Dict[str, dict] = {}  # room_code + round -> 計算結果のキャッシュ
 
+# ルームごとのロック（レースコンディション防止用）
+room_locks: Dict[str, asyncio.Lock] = {}
+
 # WebSocket接続管理
 class ConnectionManager:
     def __init__(self):
@@ -1213,13 +1216,85 @@ async def websocket_endpoint(
                 print(f"[WebSocket] メッセージ処理エラー: {e}")
     except WebSocketDisconnect:
         print(f"[WebSocket] 切断: room={room_code}, player_id={player_id}")
-        # 切断時に他のプレイヤーに通知
-        if player_id:
-            message = {
-                "type": "player_offline",
-                "player_id": player_id
-            }
-            await manager.broadcast(room_code, message)
+
+        # ロビーフェーズでオフラインになった場合、プレイヤーを自動削除
+        if player_id and room_code in rooms:
+            # ルームのロックを取得（ない場合は作成）
+            if room_code not in room_locks:
+                room_locks[room_code] = asyncio.Lock()
+
+            # ロックを取得してからプレイヤー削除処理を実行
+            async with room_locks[room_code]:
+                # ロック取得後に再度ルームの存在確認（削除済みの可能性があるため）
+                if room_code not in rooms:
+                    manager.disconnect(websocket, room_code)
+                    return
+
+                room = rooms[room_code]
+
+                # ロビーフェーズの場合のみ自動削除
+                if room["phase"] == "lobby":
+                    room_players = players.get(room_code, [])
+                    player = next((p for p in room_players if p["player_id"] == player_id), None)
+
+                    if player:
+                        player_slot = player["player_slot"]
+                        player_name = player["player_name"]
+                        was_host = player.get("is_host") == 1
+
+                        print(f"[WebSocket] ロビー中にオフライン。プレイヤーを削除: {player_name} (slot={player_slot})")
+
+                        # プレイヤーを削除
+                        players[room_code] = [p for p in room_players if p["player_id"] != player_id]
+
+                        # トークンも削除
+                        if player_id in player_tokens:
+                            del player_tokens[player_id]
+
+                        # ホストが離脱した場合、次のプレイヤーをホストに昇格
+                        if was_host and len(players[room_code]) > 0:
+                            players[room_code][0]["is_host"] = 1
+                            new_host_name = players[room_code][0]["player_name"]
+                            print(f"[WebSocket] 新しいホスト: {new_host_name}")
+
+                            # ホスト変更を通知
+                            await manager.broadcast(room_code, {
+                                "type": "host_changed",
+                                "new_host_slot": players[room_code][0]["player_slot"],
+                                "new_host_name": new_host_name
+                            })
+
+                        # プレイヤー削除を通知
+                        await manager.broadcast(room_code, {
+                            "type": "player_removed",
+                            "player_id": player_id,
+                            "player_slot": player_slot,
+                            "player_name": player_name,
+                            "reason": "offline_in_lobby"
+                        })
+
+                        # ルームが空になったら削除
+                        if len(players[room_code]) == 0:
+                            print(f"[WebSocket] ルームが空になったため削除: {room_code}")
+                            if room_code in rooms:
+                                del rooms[room_code]
+                            if room_code in players:
+                                del players[room_code]
+                            if room_code in cards:
+                                del cards[room_code]
+                            if room_code in votes:
+                                del votes[room_code]
+                            if room_code in chat_messages:
+                                del chat_messages[room_code]
+                            if room_code in room_locks:
+                                del room_locks[room_code]
+                else:
+                    # ゲーム中の場合はオフライン通知のみ
+                    await manager.broadcast(room_code, {
+                        "type": "player_offline",
+                        "player_id": player_id
+                    })
+
         manager.disconnect(websocket, room_code)
     except Exception as e:
         print(f"[WebSocket] エラー: {e}")

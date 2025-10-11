@@ -41,6 +41,21 @@ const getAuthHeaders = (additionalHeaders: Record<string, string> = {}): Record<
   return headers;
 };
 
+// 認証エラー処理のヘルパー関数
+const handleAuthError = (response: Response) => {
+  if (response.status === 401 || response.status === 403) {
+    // LocalStorageをクリア
+    localStorage.removeItem('online_room_code');
+    localStorage.removeItem('online_player_id');
+    localStorage.removeItem('online_player_name');
+    localStorage.removeItem('online_player_token');
+    // エラーメッセージを表示してオンラインのトップページに戻る
+    alert('セッションの有効期限が切れました。再度ログインしてください。');
+    window.location.href = '/online';
+    throw new Error('Authentication failed');
+  }
+};
+
 export interface Room {
   room_code: string;
   phase: string;
@@ -151,6 +166,7 @@ export const api = {
         round_seed: roundSeed,
       }),
     });
+    handleAuthError(res);
     if (!res.ok) throw new Error('Failed to update phase');
     return res.json();
   },
@@ -160,6 +176,7 @@ export const api = {
       method: 'POST',
       headers: getAuthHeaders(),
     });
+    handleAuthError(res);
     if (!res.ok) throw new Error('Failed to leave room');
     return res.json();
   },
@@ -176,6 +193,7 @@ export const api = {
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ card_id: cardId, quadrant, offsets }),
     });
+    handleAuthError(res);
     if (!res.ok) throw new Error('Failed to place card');
     return res.json();
   },
@@ -186,6 +204,7 @@ export const api = {
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ target_slot: targetSlot }),
     });
+    handleAuthError(res);
     if (!res.ok) throw new Error('Failed to submit vote');
     return res.json();
   },
@@ -200,6 +219,7 @@ export const api = {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/hand?player_id=${playerId}`, {
       headers: getAuthHeaders(),
     });
+    handleAuthError(res);
     if (!res.ok) throw new Error('Failed to get hand');
     return res.json();
   },
@@ -235,6 +255,7 @@ export const api = {
       method: 'POST',
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
     });
+    handleAuthError(res);
     if (!res.ok) throw new Error('Failed to start next round');
     return res.json();
   },
@@ -268,6 +289,7 @@ export const api = {
       headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ themes }),
     });
+    handleAuthError(res);
     if (!res.ok) throw new Error('Failed to update themes');
     return res.json();
   },

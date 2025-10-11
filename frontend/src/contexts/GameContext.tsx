@@ -169,17 +169,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
             api.getRoom(room.room_code).then(({ players: newPlayers }) => {
               setPlayers(newPlayers);
             });
-            // Peer IDが含まれている場合はVC接続用にイベント発火
-            if (message.peer_id) {
-              console.log('📡 [GameContext/WS] player_online with peer_id:', message);
-              window.dispatchEvent(new CustomEvent('vc-peer-id', {
-                detail: {
-                  type: 'vc_peer_id',
-                  player_id: message.player_id,
-                  peer_id: message.peer_id
-                }
-              }));
-            }
             break;
 
           case 'player_offline':
@@ -242,20 +231,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
             api.getRoom(room.room_code).then(({ room: newRoom }) => {
               setRoom(newRoom);
             });
-            break;
-
-          case 'vc_settings_updated':
-            // VC設定が更新されたらルーム情報を再取得
-            api.getRoom(room.room_code).then(({ room: newRoom }) => {
-              setRoom(newRoom);
-            });
-            break;
-
-          case 'vc_peer_id':
-            // VC Peer IDの共有メッセージをカスタムイベントとして再発火
-            console.log('📡 [GameContext/WS] Received vc_peer_id from server:', message);
-            window.dispatchEvent(new CustomEvent('vc-peer-id', { detail: message }));
-            console.log('📡 [GameContext/WS] Dispatched vc-peer-id custom event');
             break;
 
           case 'round_started':

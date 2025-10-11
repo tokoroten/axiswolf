@@ -27,7 +27,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(del \"c:\\Users\\shinta\\Documents\\GitHub\\yonshogen\\frontend\\src\\contexts\\VoiceChatContext.tsx\")"
     ],
     "deny": [],
     "ask": []

@@ -386,7 +386,6 @@ votes: Dict[str, List[dict]] = {}
 chat_messages: Dict[str, List[dict]] = {}  # room_code -> チャットメッセージリスト
 player_tokens: Dict[str, str] = {}  # player_id -> token の対応
 cached_results: Dict[str, dict] = {}  # room_code + round -> 計算結果のキャッシュ
-player_peer_ids: Dict[str, str] = {}  # player_id -> peer_id の対応
 
 # WebSocket接続管理
 class ConnectionManager:
@@ -507,9 +506,6 @@ class SubmitVoteRequest(BaseModel):
 class UpdateThemesRequest(BaseModel):
     themes: List[str]
 
-class UpdateVcSettingsRequest(BaseModel):
-    vc_enabled: bool
-
 # ヘルスチェック
 @app.get("/api/health")
 async def health_check():
@@ -532,7 +528,6 @@ async def create_room(req: CreateRoomRequest):
         "selected_theme": None,  # ラウンドごとに決定されたテーマ
         "scores": "{}",
         "themes": json.dumps(['food', 'daily', 'entertainment']),  # デフォルトテーマ
-        "vc_enabled": False,  # ボイスチャット有効フラグ
         "created_at": now.isoformat(),
         "updated_at": now.isoformat(),
         "last_activity_at": now.isoformat(),
@@ -731,43 +726,6 @@ async def update_themes(
     })
 
     return {"success": True, "themes": req.themes}
-
-# VC設定更新
-@app.post("/api/rooms/{room_code}/vc_settings")
-async def update_vc_settings(
-    room_code: str,
-    req: UpdateVcSettingsRequest,
-    player_id: str = Depends(verify_player_token)
-):
-    if room_code not in rooms:
-        raise HTTPException(status_code=404, detail="Room not found")
-
-    room = rooms[room_code]
-
-    # ホストチェック（トークン認証が有効な場合のみ）
-    if REQUIRE_TOKEN_AUTH:
-        room_players = players.get(room_code, [])
-        player = next((p for p in room_players if p["player_id"] == player_id), None)
-        if not player or not player.get("is_host"):
-            raise HTTPException(status_code=403, detail="Only the host can update VC settings")
-
-    # ロビー中のみVC設定変更可能
-    if room["phase"] != "lobby":
-        raise HTTPException(status_code=400, detail="Cannot change VC settings after game has started")
-
-    # VC設定を更新
-    now = datetime.now()
-    rooms[room_code]["vc_enabled"] = req.vc_enabled
-    rooms[room_code]["updated_at"] = now.isoformat()
-    rooms[room_code]["last_activity_at"] = now.isoformat()
-
-    # 他のプレイヤーに通知
-    await manager.broadcast(room_code, {
-        "type": "vc_settings_updated",
-        "vc_enabled": req.vc_enabled
-    })
-
-    return {"success": True, "vc_enabled": req.vc_enabled}
 
 # フェーズ更新
 @app.post("/api/rooms/{room_code}/phase")
@@ -1207,16 +1165,12 @@ async def websocket_endpoint(
 
     # 接続時に他のプレイヤーに通知
     if player_id:
-        # 保存されているPeer IDがあれば含める
-        peer_id = player_peer_ids.get(player_id)
         message = {
             "type": "player_online",
             "player_id": player_id
         }
-        if peer_id:
-            message["peer_id"] = peer_id
         await manager.broadcast(room_code, message)
-        print(f"[WebSocket] player_online ブロードキャスト: player={player_id}, peer={peer_id}")
+        print(f"[WebSocket] player_online ブロードキャスト: player={player_id}")
 
     print(f"[WebSocket] メッセージ受信ループ開始: room={room_code}, player_id={player_id}")
     try:
@@ -1247,17 +1201,6 @@ async def websocket_endpoint(
                 if message_type == "chat":
                     # チャットメッセージは既に上で処理済み
                     pass
-                elif message_type == "vc_peer_id":
-                    # VC Peer IDの共有メッセージを保存してブロードキャスト
-                    peer_player_id = message.get("player_id")
-                    peer_id = message.get("peer_id")
-                    if peer_player_id and peer_id:
-                        player_peer_ids[peer_player_id] = peer_id
-                        print(f"[WebSocket] Peer ID保存: player={peer_player_id}, peer={peer_id}")
-
-                    print(f"[WebSocket] VC Peer ID共有メッセージをブロードキャスト: {message}")
-                    await manager.broadcast(room_code, message)
-                    print(f"[WebSocket] VC Peer IDブロードキャスト完了")
                 elif message_type == "ping":
                     # pingメッセージを受信したらpongを返す
                     print(f"[WebSocket] Ping受信: room={room_code}, player_id={player_id}")
@@ -1272,19 +1215,11 @@ async def websocket_endpoint(
         print(f"[WebSocket] 切断: room={room_code}, player_id={player_id}")
         # 切断時に他のプレイヤーに通知
         if player_id:
-            # 保存されているPeer IDがあれば含める
-            peer_id = player_peer_ids.get(player_id)
             message = {
                 "type": "player_offline",
                 "player_id": player_id
             }
-            if peer_id:
-                message["peer_id"] = peer_id
             await manager.broadcast(room_code, message)
-            # Peer IDをクリア
-            if player_id in player_peer_ids:
-                del player_peer_ids[player_id]
-                print(f"[WebSocket] Peer ID削除: player={player_id}")
         manager.disconnect(websocket, room_code)
     except Exception as e:
         print(f"[WebSocket] エラー: {e}")

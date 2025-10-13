@@ -50,6 +50,16 @@ export default function OnlineGame() {
     }
   }, [roomCode, navigate]);
 
+  // 直接URLアクセス時の対応：必要な接続情報が無い場合はOnlineHomeにリダイレクト
+  useEffect(() => {
+    if (roomCode && !room && !playerId) {
+      // roomCodeはあるが、playerId（接続情報）が無い = 直接URLアクセス
+      // OnlineHomeにルームコード付きでリダイレクト
+      console.log('[OnlineGame] 接続情報が不足しているため、OnlineHomeにリダイレクトします');
+      navigate(`/online?room=${roomCode}`, { replace: true });
+    }
+  }, [roomCode, room, playerId, navigate]);
+
   // QRコード生成
   useEffect(() => {
     if (roomCode) {

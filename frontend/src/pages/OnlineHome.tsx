@@ -21,6 +21,8 @@ export default function OnlineHome() {
     }
     const newPlayerId = `player_${Math.random().toString(36).slice(2)}`;
     console.log('[OnlineHome] Generated new player_id:', newPlayerId);
+    // 新規生成したIDをすぐにLocalStorageに保存（直接URLアクセス時に必要）
+    localStorage.setItem('online_player_id', newPlayerId);
     return newPlayerId;
   });
   const [savedRoom, setSavedRoom] = useState<{ roomCode: string; playerName: string } | null>(null);

@@ -731,11 +731,6 @@ export default function OnlineGame() {
                     const playerHasVoted = votes.some(v => v.voter_slot === player.player_slot);
                     const isVotedByMe = myVote?.target_slot === player.player_slot;
 
-                    // 自分が投票済みで、このプレイヤーに投票していない場合は表示しない
-                    if (hasVoted && !isVotedByMe && !isMyself) {
-                      return null;
-                    }
-
                     return (
                       <div key={player.player_slot} className="flex flex-col gap-3">
                         <div

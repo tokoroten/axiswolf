@@ -752,6 +752,13 @@ async def update_phase(
     rooms[room_code]["updated_at"] = now.isoformat()
     rooms[room_code]["last_activity_at"] = now.isoformat()
 
+    # ロビーに戻る場合はカードと投票をクリア
+    if req.phase == 'lobby':
+        if room_code in cards:
+            cards[room_code] = []
+        if room_code in votes:
+            votes[room_code] = []
+
     # 結果フェーズに移行する際にスコア計算を実行
     if req.phase == 'results':
         room = rooms[room_code]
@@ -1090,6 +1097,14 @@ async def start_next_round(
 
     # 結果計算フラグをリセット
     room["round_results_calculated"] = False
+
+    # 前ラウンドの結果キャッシュをクリア
+    room.pop("last_wolf_slot", None)
+    room.pop("last_top_voted", None)
+    room.pop("last_wolf_caught", None)
+    room.pop("last_round_scores", None)
+    room.pop("last_vote_counts", None)
+    room.pop("last_all_hands", None)
 
     # 前ラウンドのカードと投票をクリア
     if room_code in cards:

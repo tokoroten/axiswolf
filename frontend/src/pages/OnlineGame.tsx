@@ -98,9 +98,9 @@ export default function OnlineGame() {
         ? JSON.parse(room.axis_payload)
         : room.axis_payload;
 
-      // 自分が人狼かどうかを確認
-      const wolfSlot = (parseInt(room.round_seed) % players.length);
-      const isWolf = playerSlot === wolfSlot;
+      // 自分が人狼かどうかを確認（サーバーで決定済みのwolf_slotを使用）
+      const wolfSlot = room.wolf_slot;
+      const isWolf = wolfSlot !== undefined && wolfSlot !== null && playerSlot === wolfSlot;
 
       console.log('[OnlineGame] Setting axis', { playerSlot, wolfSlot, isWolf });
 

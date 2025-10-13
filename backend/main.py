@@ -765,11 +765,10 @@ async def update_phase(
         room_players = players.get(room_code, [])
         room_votes = votes.get(room_code, [])
 
-        # 人狼を特定
-        if room["round_seed"]:
-            # シード値で乱数を初期化して人狼を決定
-            rng = random.Random(int(room["round_seed"]))
-            wolf_slot = rng.randint(0, len(room_players) - 1)
+        # 人狼を特定（ラウンド開始時に決定済みのものを使用）
+        if room.get("wolf_slot") is not None:
+            wolf_slot = room["wolf_slot"]
+            print(f"[update_phase:results] Using saved wolf_slot: {wolf_slot}", file=sys.stderr)
 
             # 投票集計
             vote_counts: Dict[int, int] = {}
@@ -828,9 +827,11 @@ async def update_phase(
             # 全プレイヤーの手札を生成（テーマ対応）
             room_themes_str = room.get("themes")
             themes = json.loads(room_themes_str) if room_themes_str else None
-            num_players = len(room_players)
+            # ラウンド開始時に保存されたプレイヤー数を使用
+            num_players = room.get("round_num_players", len(room_players))
             all_hands_dict = generate_all_hands(room["round_seed"], num_players, 5, themes)
             all_hands = {str(slot): hand for slot, hand in all_hands_dict.items()}
+            print(f"[update_phase:results] Generated hands with num_players={num_players}", file=sys.stderr)
 
             # 結果をroomに保存
             room["round_results_calculated"] = True
@@ -866,6 +867,16 @@ async def update_phase(
         rooms[room_code]["axis_payload"] = normal_axis
         rooms[room_code]["wolf_axis_payload"] = wolf_axis
         rooms[room_code]["round_seed"] = str(seed)
+
+        # 人狼を決定してルームに保存
+        room_players = players.get(room_code, [])
+        num_players = len(room_players)
+        if num_players > 0:
+            rng = random.Random(seed)
+            wolf_slot = rng.randint(0, num_players - 1)
+            rooms[room_code]["wolf_slot"] = wolf_slot
+            rooms[room_code]["round_num_players"] = num_players  # プレイヤー数を保存
+            print(f"[update_phase:placement] Wolf determined: slot={wolf_slot}, num_players={num_players}, seed={seed}", file=sys.stderr)
     else:
         # 手動で提供された軸データを使用
         if req.axis_payload:
@@ -959,9 +970,10 @@ async def get_hand(
     room_themes_str = room.get("themes")
     themes = json.loads(room_themes_str) if room_themes_str else None
 
-    # 手札を生成（プレイヤー数を渡して重複なしで配布、テーマ対応）
-    num_players = len(room_players)
+    # 手札を生成（ラウンド開始時に保存されたプレイヤー数を使用）
+    num_players = room.get("round_num_players", len(room_players))
     hand = generate_hand(player["player_slot"], room["round_seed"], num_players, 5, themes)
+    print(f"[get_hand] Generated hand for player_slot={player['player_slot']} with num_players={num_players}", file=sys.stderr)
 
     return {
         "hand": hand,
@@ -1084,6 +1096,15 @@ async def start_next_round(
     normal_axis = generate_axis_pair(themes, new_seed)
     wolf_axis = generate_wolf_axis_pair(normal_axis, themes, new_seed)
 
+    # 人狼を決定
+    num_players = len(room_players)
+    if num_players > 0:
+        rng = random.Random(new_seed)
+        wolf_slot = rng.randint(0, num_players - 1)
+        print(f"[start_next_round] Wolf determined: slot={wolf_slot}, num_players={num_players}, seed={new_seed}", file=sys.stderr)
+    else:
+        wolf_slot = None
+
     # ルームの状態を更新
     now = datetime.now()
     room["active_round"] = new_round
@@ -1092,6 +1113,8 @@ async def start_next_round(
     room["selected_theme"] = selected_theme  # テーマを保存
     room["axis_payload"] = normal_axis
     room["wolf_axis_payload"] = wolf_axis
+    room["wolf_slot"] = wolf_slot  # 人狼スロットを保存
+    room["round_num_players"] = num_players  # プレイヤー数を保存
     room["updated_at"] = now.isoformat()
     room["last_activity_at"] = now.isoformat()
 

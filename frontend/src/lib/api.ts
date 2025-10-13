@@ -66,6 +66,7 @@ export interface Room {
   axis_payload: string | null;
   wolf_axis_payload: string | null;
   round_seed: string | null;
+  wolf_slot: number | null;
   scores: string;
   themes: string | null;
   discussion_deadline: string | null;

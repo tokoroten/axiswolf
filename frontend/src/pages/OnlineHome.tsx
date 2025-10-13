@@ -12,7 +12,17 @@ export default function OnlineHome() {
     // localStorageから保存された名前を読み込む
     return localStorage.getItem('saved_player_name') || '';
   });
-  const [playerId] = useState(() => `player_${Math.random().toString(36).slice(2)}`);
+  const [playerId] = useState(() => {
+    // LocalStorageに保存されているplayer_idがあればそれを使用、なければ新規生成
+    const savedPlayerId = localStorage.getItem('online_player_id');
+    if (savedPlayerId) {
+      console.log('[OnlineHome] Using saved player_id:', savedPlayerId);
+      return savedPlayerId;
+    }
+    const newPlayerId = `player_${Math.random().toString(36).slice(2)}`;
+    console.log('[OnlineHome] Generated new player_id:', newPlayerId);
+    return newPlayerId;
+  });
   const [savedRoom, setSavedRoom] = useState<{ roomCode: string; playerName: string } | null>(null);
   const [showRules, setShowRules] = useState(false);
 

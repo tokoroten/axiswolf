@@ -56,7 +56,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const savedRoomCode = localStorage.getItem('online_room_code');
     const savedPlayerId = localStorage.getItem('online_player_id');
     const savedPlayerName = localStorage.getItem('online_player_name');
-    const savedToken = localStorage.getItem('online_player_token');
 
     // 現在のURLパスを確認
     const currentPath = window.location.pathname;
@@ -74,24 +73,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         // 再接続を試みる（直接APIを呼ぶ）
         (async () => {
           try {
-            // トークンが存在する場合は検証
-            if (savedToken) {
-              const isValid = await api.verifyToken(savedPlayerId, savedToken);
-              if (!isValid) {
-                console.error('[GameContext] トークン検証失敗。再ログインが必要です。');
-                // トークンが無効なので、LocalStorageをクリア
-                localStorage.removeItem('online_room_code');
-                localStorage.removeItem('online_player_id');
-                localStorage.removeItem('online_player_name');
-                localStorage.removeItem('online_player_token');
-                // エラーメッセージを表示してオンラインのトップページに戻る
-                alert('セッションの有効期限が切れました。再度ログインしてください。');
-                window.location.href = '/online';
-                return;
-              }
-              console.log('[GameContext] トークン検証成功');
-            }
-
+            // リロード時は直接joinRoomを呼ぶ（既存プレイヤーとして認識される）
             const { player_slot, token } = await api.joinRoom(savedRoomCode, savedPlayerId, savedPlayerName);
             const { room: newRoom, players: newPlayers } = await api.getRoom(savedRoomCode);
             setRoom(newRoom);

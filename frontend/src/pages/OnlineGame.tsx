@@ -327,9 +327,9 @@ export default function OnlineGame() {
         {(!isMobile || activeTab === 'game') && (
           <>
             {/* ヘッダー */}
-            <div className="flex justify-between items-center mb-4">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">ルーム: {roomCode}</h1>
+            <div className="flex flex-col md:flex-row justify-between md:items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
+            <h1 className="text-xl md:text-2xl font-bold">ルーム: {roomCode}</h1>
 
             {/* ホストの進行ボタン */}
             {isHost && room.phase === 'lobby' && (
@@ -445,25 +445,25 @@ export default function OnlineGame() {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="text-sm">
-              フェーズ: {room.phase} | プレイヤー数: {players.length}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="text-xs md:text-sm whitespace-nowrap">
+              {room.phase} | {players.length}人
             </div>
             {myPlayer && playerSlot !== null && (
-              <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded-lg border-2 border-gray-700">
+              <div className="flex items-center gap-2 bg-gray-800 px-2 md:px-4 py-1.5 md:py-2 rounded-lg border-2 border-gray-700">
                 <div
-                  className="w-6 h-6 rounded-full border-2 border-white"
+                  className="w-5 h-5 md:w-6 md:h-6 rounded-full border-2 border-white flex-shrink-0"
                   style={{ backgroundColor: getPlayerColorStyle(playerSlot) }}
                 ></div>
-                <span className="font-bold">{myPlayer.player_name}</span>
+                <span className="font-bold text-sm md:text-base truncate max-w-[80px] md:max-w-none">{myPlayer.player_name}</span>
                 {myPlayer.is_host === 1 && (
-                  <span className="text-xs bg-yellow-600 px-2 py-0.5 rounded">ホスト</span>
+                  <span className="text-xs bg-yellow-600 px-1.5 md:px-2 py-0.5 rounded flex-shrink-0">ホスト</span>
                 )}
               </div>
             )}
             <button
               onClick={() => setShowRules(true)}
-              className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded text-sm font-medium transition-colors"
+              className="px-2 md:px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded text-xs md:text-sm font-medium transition-colors whitespace-nowrap"
             >
               📖 ルール
             </button>
@@ -474,9 +474,9 @@ export default function OnlineGame() {
                     await updatePhase('lobby');
                   }
                 }}
-                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-sm font-medium transition-colors"
+                className="px-2 md:px-3 py-1.5 bg-blue-600 hover:bg-blue-700 rounded text-xs md:text-sm font-medium transition-colors whitespace-nowrap"
               >
-                🏠 ロビーに戻る
+                🏠 ロビー
               </button>
             )}
           </div>

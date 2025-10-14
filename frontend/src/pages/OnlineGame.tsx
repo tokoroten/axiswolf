@@ -761,11 +761,13 @@ export default function OnlineGame() {
                 players={players}
                 interactive={true}
                 onBoardClick={handleBoardClick}
+                onCardClick={setSelectedCard}
                 onCardDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}
                 currentPlayerSlot={playerSlot}
                 roomPhase={room.phase}
+                selectedCard={selectedCard}
               />
             )}
           </>

@@ -25,11 +25,13 @@ interface GameBoardProps {
   players: Player[];
   interactive?: boolean;
   onBoardClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
+  onCardClick?: (cardId: string) => void;
   onCardDragStart?: (cardId: string, isPlaced: boolean) => void;
   onDragOver?: (e: React.DragEvent<HTMLDivElement>) => void;
   onDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
   currentPlayerSlot?: number | null;
   roomPhase?: string;
+  selectedCard?: string | null;
 }
 
 const STORAGE_KEY = 'gameboard_zoom_size';
@@ -41,11 +43,13 @@ export default function GameBoard({
   players,
   interactive = false,
   onBoardClick,
+  onCardClick,
   onCardDragStart,
   onDragOver,
   onDrop,
   currentPlayerSlot,
   roomPhase,
+  selectedCard,
 }: GameBoardProps) {
   // localStorageから初期値を読み込む
   const [size, setSize] = useState(() => {
@@ -215,15 +219,22 @@ export default function GameBoard({
         const player = players.find(p => p.player_slot === card.player_slot);
         const uniqueKey = `${card.player_slot}-${card.card_id}`;
         const isDraggable = isMyCard && interactive && roomPhase === 'placement';
+        const isSelected = selectedCard === card.card_id;
 
         return (
           <div
             key={uniqueKey}
             draggable={isDraggable}
             onDragStart={() => isDraggable && onCardDragStart?.(card.card_id, true)}
-            className={`absolute w-16 h-16 rounded-lg flex flex-col items-center justify-center text-xs font-bold shadow-xl border-2 hover:scale-110 hover:z-20 ${
-              isDraggable ? 'cursor-move border-white' : 'cursor-default border-white/50'
-            }`}
+            onClick={(e) => {
+              if (isDraggable && onCardClick) {
+                e.stopPropagation();  // ボードのクリックイベントを防ぐ
+                onCardClick(card.card_id);
+              }
+            }}
+            className={`absolute w-16 h-16 rounded-lg flex flex-col items-center justify-center text-xs font-bold shadow-xl border-2 hover:scale-110 hover:z-20 transition-all ${
+              isDraggable ? 'cursor-pointer border-white' : 'cursor-default border-white/50'
+            } ${isSelected ? 'scale-110 ring-4 ring-blue-400 z-30' : ''}`}
             style={{
               left: `${(card.offsets.x + 1) * 50}%`,
               top: `${(card.offsets.y + 1) * 50}%`,

@@ -189,14 +189,16 @@ export default function OnlineGame() {
     }
   }, [room?.phase, gameResults, calculateResults]);
 
-  // resultsフェーズに入ったら開始時刻を記録
+  // resultsフェーズに入ったら開始時刻を記録、他フェーズに移行したらクリア
   useEffect(() => {
     if (room?.phase === 'results') {
       setResultsPhaseStartTime(Date.now());
       setShouldBlinkNextRound(false);
     } else {
+      // resultsフェーズ以外に移行したら、結果表示をクリア
       setResultsPhaseStartTime(null);
       setShouldBlinkNextRound(false);
+      setGameResults(null);  // 非ホストプレイヤー用：次ラウンドで新しい結果を取得するためクリア
     }
   }, [room?.phase]);
 

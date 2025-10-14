@@ -622,16 +622,16 @@ export default function OnlineGame() {
               <h2 className="font-bold mb-2 text-yellow-300">🔗 プレイヤーを招待</h2>
               <p className="text-sm text-gray-300 mb-3">このリンクやQRコードを共有してプレイヤーを招待しましょう</p>
 
-              <div className="flex gap-4 items-start">
+              <div className="flex flex-col md:flex-row gap-4 items-start">
                 {/* QRコード */}
                 {qrCodeUrl && (
-                  <div className="bg-white p-3 rounded-lg">
+                  <div className="bg-white p-3 rounded-lg mx-auto md:mx-0">
                     <img src={qrCodeUrl} alt="招待用QRコード" className="w-40 h-40" />
                   </div>
                 )}
 
                 {/* リンク */}
-                <div className="flex-1 flex flex-col gap-2">
+                <div className="flex-1 flex flex-col gap-2 w-full">
                   <div className="flex gap-2">
                     <input
                       type="text"

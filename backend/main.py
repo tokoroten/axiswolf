@@ -243,9 +243,10 @@ def get_filtered_card_pool(themes: Optional[List[str]] = None, seed: Optional[in
     # フォールバック: 全カード
     return CARD_POOL.copy()
 
-def generate_all_hands(round_seed: str, num_players: int, hand_size: int = 5, themes: Optional[List[str]] = None) -> Dict[int, List[str]]:
+def generate_all_hands(round_seed: str, player_slots: List[int], hand_size: int = 5, themes: Optional[List[str]] = None) -> Dict[int, List[str]]:
     """
     全プレイヤーの手札を一度に生成（重複なし、テーマフィルタ対応）
+    player_slots: 実際のプレイヤースロット番号のリスト（例: [0, 2, 3]）
     """
     rng = random.Random(int(round_seed))
 
@@ -256,10 +257,10 @@ def generate_all_hands(round_seed: str, num_players: int, hand_size: int = 5, th
     shuffled_cards = card_pool.copy()
     rng.shuffle(shuffled_cards)
 
-    # 各プレイヤーに配布
+    # 各プレイヤーに配布（実際のスロット番号を使用）
     hands = {}
-    for player_slot in range(num_players):
-        start_idx = player_slot * hand_size
+    for idx, player_slot in enumerate(sorted(player_slots)):  # スロット番号でソートして決定的に配布
+        start_idx = idx * hand_size
         end_idx = start_idx + hand_size
 
         # カードが足りない場合は循環して使用
@@ -272,11 +273,12 @@ def generate_all_hands(round_seed: str, num_players: int, hand_size: int = 5, th
 
     return hands
 
-def generate_hand(player_slot: int, round_seed: str, num_players: int, hand_size: int = 5, themes: Optional[List[str]] = None) -> List[str]:
+def generate_hand(player_slot: int, round_seed: str, player_slots: List[int], hand_size: int = 5, themes: Optional[List[str]] = None) -> List[str]:
     """
     特定プレイヤーの手札を生成（重複なしで配布、テーマフィルタ対応）
+    player_slots: 実際のプレイヤースロット番号のリスト（例: [0, 2, 3]）
     """
-    all_hands = generate_all_hands(round_seed, num_players, hand_size, themes)
+    all_hands = generate_all_hands(round_seed, player_slots, hand_size, themes)
     return all_hands.get(player_slot, [])
 
 def generate_token() -> str:
@@ -827,11 +829,16 @@ async def update_phase(
             # 全プレイヤーの手札を生成（テーマ対応）
             room_themes_str = room.get("themes")
             themes = json.loads(room_themes_str) if room_themes_str else None
-            # ラウンド開始時に保存されたプレイヤー数を使用
-            num_players = room.get("round_num_players", len(room_players))
-            all_hands_dict = generate_all_hands(room["round_seed"], num_players, 5, themes)
+            # ラウンド開始時に保存されたプレイヤースロットリストを使用
+            player_slots_str = room.get("round_player_slots")
+            if player_slots_str:
+                player_slots = json.loads(player_slots_str)
+            else:
+                # 後方互換性：round_player_slotsが存在しない場合は現在のプレイヤーから生成
+                player_slots = sorted([p["player_slot"] for p in room_players])
+            all_hands_dict = generate_all_hands(room["round_seed"], player_slots, 5, themes)
             all_hands = {str(slot): hand for slot, hand in all_hands_dict.items()}
-            print(f"[update_phase:results] Generated hands with num_players={num_players}", file=sys.stderr)
+            print(f"[update_phase:results] Generated hands with player_slots={player_slots}", file=sys.stderr)
 
             # 結果をroomに保存
             room["round_results_calculated"] = True
@@ -870,13 +877,15 @@ async def update_phase(
 
         # 人狼を決定してルームに保存
         room_players = players.get(room_code, [])
-        num_players = len(room_players)
+        player_slots = sorted([p["player_slot"] for p in room_players])  # 実際のスロット番号リスト
+        num_players = len(player_slots)
         if num_players > 0:
             rng = random.Random(seed)
-            wolf_slot = rng.randint(0, num_players - 1)
+            wolf_index = rng.randint(0, num_players - 1)  # 0からnum_players-1のインデックス
+            wolf_slot = player_slots[wolf_index]  # 実際のスロット番号
             rooms[room_code]["wolf_slot"] = wolf_slot
-            rooms[room_code]["round_num_players"] = num_players  # プレイヤー数を保存
-            print(f"[update_phase:placement] Wolf determined: slot={wolf_slot}, num_players={num_players}, seed={seed}", file=sys.stderr)
+            rooms[room_code]["round_player_slots"] = json.dumps(player_slots)  # プレイヤースロットリストを保存
+            print(f"[update_phase:placement] Wolf determined: slot={wolf_slot}, player_slots={player_slots}, seed={seed}", file=sys.stderr)
     else:
         # 手動で提供された軸データを使用
         if req.axis_payload:
@@ -970,10 +979,15 @@ async def get_hand(
     room_themes_str = room.get("themes")
     themes = json.loads(room_themes_str) if room_themes_str else None
 
-    # 手札を生成（ラウンド開始時に保存されたプレイヤー数を使用）
-    num_players = room.get("round_num_players", len(room_players))
-    hand = generate_hand(player["player_slot"], room["round_seed"], num_players, 5, themes)
-    print(f"[get_hand] Generated hand for player_slot={player['player_slot']} with num_players={num_players}", file=sys.stderr)
+    # 手札を生成（ラウンド開始時に保存されたプレイヤースロットリストを使用）
+    player_slots_str = room.get("round_player_slots")
+    if player_slots_str:
+        player_slots = json.loads(player_slots_str)
+    else:
+        # 後方互換性：round_player_slotsが存在しない場合は現在のプレイヤーから生成
+        player_slots = sorted([p["player_slot"] for p in room_players])
+    hand = generate_hand(player["player_slot"], room["round_seed"], player_slots, 5, themes)
+    print(f"[get_hand] Generated hand for player_slot={player['player_slot']} with player_slots={player_slots}", file=sys.stderr)
 
     return {
         "hand": hand,
@@ -1096,12 +1110,14 @@ async def start_next_round(
     normal_axis = generate_axis_pair(themes, new_seed)
     wolf_axis = generate_wolf_axis_pair(normal_axis, themes, new_seed)
 
-    # 人狼を決定
-    num_players = len(room_players)
+    # 人狼を決定（実際のプレイヤースロットを使用）
+    player_slots = sorted([p["player_slot"] for p in room_players])
+    num_players = len(player_slots)
     if num_players > 0:
         rng = random.Random(new_seed)
-        wolf_slot = rng.randint(0, num_players - 1)
-        print(f"[start_next_round] Wolf determined: slot={wolf_slot}, num_players={num_players}, seed={new_seed}", file=sys.stderr)
+        wolf_index = rng.randint(0, num_players - 1)
+        wolf_slot = player_slots[wolf_index]
+        print(f"[start_next_round] Wolf determined: slot={wolf_slot}, player_slots={player_slots}, seed={new_seed}", file=sys.stderr)
     else:
         wolf_slot = None
 
@@ -1114,7 +1130,7 @@ async def start_next_round(
     room["axis_payload"] = normal_axis
     room["wolf_axis_payload"] = wolf_axis
     room["wolf_slot"] = wolf_slot  # 人狼スロットを保存
-    room["round_num_players"] = num_players  # プレイヤー数を保存
+    room["round_player_slots"] = json.dumps(player_slots)  # プレイヤースロットリストを保存
     room["updated_at"] = now.isoformat()
     room["last_activity_at"] = now.isoformat()
 

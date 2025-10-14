@@ -759,12 +759,6 @@ export default function OnlineGame() {
                     );
                   })}
                 </div>
-                {selectedCard && room.phase === 'placement' && (
-                  <div className="mt-2 text-xs bg-blue-900/50 border border-blue-400 rounded px-2 py-1.5">
-                    <span className="text-blue-300">📌 選択中:</span> <span className="text-white font-bold">{selectedCard}</span>
-                    <span className="text-gray-400 ml-2">→ ボードをタップして配置</span>
-                  </div>
-                )}
               </div>
             )}
 

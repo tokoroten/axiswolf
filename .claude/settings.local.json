@@ -28,7 +28,8 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(tasklist)",
-      "Bash(del \"c:\\Users\\shinta\\Documents\\GitHub\\yonshogen\\frontend\\src\\contexts\\VoiceChatContext.tsx\")"
+      "Bash(del \"c:\\Users\\shinta\\Documents\\GitHub\\yonshogen\\frontend\\src\\contexts\\VoiceChatContext.tsx\")",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

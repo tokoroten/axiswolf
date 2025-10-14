@@ -35,6 +35,19 @@ export default function OnlineGame() {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const [resultsPhaseStartTime, setResultsPhaseStartTime] = useState<number | null>(null);
   const [shouldBlinkNextRound, setShouldBlinkNextRound] = useState(false);
+  const [activeTab, setActiveTab] = useState<'game' | 'chat'>('game'); // モバイル用タブ切り替え
+  const [isMobile, setIsMobile] = useState(false);
+
+  // 画面サイズによってモバイルかどうかを判定
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px未満をモバイルとする
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // roomCodeがない場合、LocalStorageから復元を試みる
   useEffect(() => {
@@ -277,10 +290,40 @@ export default function OnlineGame() {
   const myPlayer = players.find(p => p.player_slot === playerSlot);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4" style={{ paddingRight: isChatCollapsed ? '1rem' : 'calc(20rem + 1rem)' }}>
+    <div className="min-h-screen bg-gray-900 text-white p-4" style={{ paddingRight: isMobile ? '1rem' : (isChatCollapsed ? '1rem' : 'calc(20rem + 1rem)') }}>
       <div className="max-w-6xl mx-auto">
-        {/* ヘッダー */}
-        <div className="flex justify-between items-center mb-4">
+        {/* モバイル用タブ切り替え */}
+        {isMobile && (
+          <div className="bg-gray-800 rounded-lg p-1 mb-4 flex gap-1">
+            <button
+              onClick={() => setActiveTab('game')}
+              className={`flex-1 py-3 rounded-lg font-bold transition-colors ${
+                activeTab === 'game'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              🎮 ゲーム
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex-1 py-3 rounded-lg font-bold transition-colors relative ${
+                activeTab === 'chat'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              }`}
+            >
+              💬 チャット
+              {/* 未読バッジはChatPanelから渡す必要があるため、後で実装 */}
+            </button>
+          </div>
+        )}
+
+        {/* ゲームコンテンツ（モバイルではタブで切り替え、デスクトップでは常に表示） */}
+        {(!isMobile || activeTab === 'game') && (
+          <>
+            {/* ヘッダー */}
+            <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">ルーム: {roomCode}</h1>
 
@@ -935,19 +978,37 @@ export default function OnlineGame() {
             </div>
           </div>
         )}
+          </>
+        )}
+
+        {/* チャットコンテンツ（モバイルではタブで切り替え、デスクトップでは非表示） */}
+        {isMobile && activeTab === 'chat' && (
+          <div className="bg-gray-800 rounded-lg p-4">
+            <ChatPanel
+              players={players}
+              currentPlayerId={playerId}
+              ws={ws}
+              isCollapsed={false}
+              onToggleCollapse={() => {}}
+              isMobileFullScreen={true}
+            />
+          </div>
+        )}
       </div>
 
       {/* ゲームルールポップアップ */}
       <GameRules isOpen={showRules} onClose={() => setShowRules(false)} />
 
-      {/* チャットパネル */}
-      <ChatPanel
-        players={players}
-        currentPlayerId={playerId}
-        ws={ws}
-        isCollapsed={isChatCollapsed}
-        onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
-      />
+      {/* デスクトップ用チャットパネル（固定サイドバー） */}
+      {!isMobile && (
+        <ChatPanel
+          players={players}
+          currentPlayerId={playerId}
+          ws={ws}
+          isCollapsed={isChatCollapsed}
+          onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
+        />
+      )}
     </div>
   );
 }

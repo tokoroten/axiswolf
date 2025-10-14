@@ -16,6 +16,7 @@ interface ChatPanelProps {
   ws: WebSocket | null;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  isMobileFullScreen?: boolean; // モバイル全画面モード
 }
 
 export default function ChatPanel({
@@ -24,6 +25,7 @@ export default function ChatPanel({
   ws,
   isCollapsed,
   onToggleCollapse,
+  isMobileFullScreen = false,
 }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -156,7 +158,8 @@ export default function ChatPanel({
     }
   };
 
-  if (isCollapsed) {
+  // モバイル全画面モードの場合は、折りたたみボタンを表示しない
+  if (isCollapsed && !isMobileFullScreen) {
     return (
       <div className="fixed right-0 top-1/2 -translate-y-1/2 z-40">
         <button
@@ -177,26 +180,35 @@ export default function ChatPanel({
     );
   }
 
+  // モバイル全画面モードの場合は、固定位置ではなく通常のフローで表示
+  const containerClass = isMobileFullScreen
+    ? "w-full bg-gray-800 rounded-lg flex flex-col"
+    : "fixed right-0 top-0 h-full w-80 bg-gray-800 border-l-2 border-gray-700 shadow-xl flex flex-col z-40";
+
+  const contentHeightClass = isMobileFullScreen ? "h-[70vh]" : "flex-1";
+
   return (
-    <div className="fixed right-0 top-0 h-full w-80 bg-gray-800 border-l-2 border-gray-700 shadow-xl flex flex-col z-40">
-      {/* ヘッダー */}
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">💬</span>
-          <h3 className="font-bold">チャット</h3>
+    <div className={containerClass}>
+      {/* ヘッダー（モバイル全画面モードでは非表示） */}
+      {!isMobileFullScreen && (
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">💬</span>
+            <h3 className="font-bold">チャット</h3>
+          </div>
+          <button
+            onClick={onToggleCollapse}
+            className="text-white hover:text-gray-200 transition-colors"
+            title="チャットを閉じる"
+          >
+            ✕
+          </button>
         </div>
-        <button
-          onClick={onToggleCollapse}
-          className="text-white hover:text-gray-200 transition-colors"
-          title="チャットを閉じる"
-        >
-          ✕
-        </button>
-      </div>
+      )}
 
 
       {/* メッセージリスト */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-900">
+      <div className={`${contentHeightClass} overflow-y-auto p-4 space-y-3 bg-gray-900`}>
         {messages.length === 0 ? (
           <div className="text-center text-gray-400 py-8">
             <p className="text-sm">まだメッセージがありません</p>

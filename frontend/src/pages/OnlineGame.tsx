@@ -722,10 +722,10 @@ export default function OnlineGame() {
             </div>
 
             {myHand.length > 0 && (
-              <div className="bg-gray-800 p-4 rounded mb-4">
-                <h2 className="font-bold mb-3 text-lg">🎴 あなたの手札</h2>
-                <p className="text-sm text-gray-400 mb-3">カードをタップして選択 → ボードをタップして配置</p>
-                <div className="flex gap-3 flex-wrap">
+              <div className="bg-gray-800 p-3 rounded mb-4">
+                <h2 className="font-bold mb-2 text-base">🎴 あなたの手札</h2>
+                <p className="text-xs text-gray-400 mb-2">カードをタップして選択 → ボードをタップして配置</p>
+                <div className="flex gap-2 flex-wrap">
                   {myHand.map((card) => {
                     const isPlaced = placedCards.some(c => c.card_id === card && c.player_slot === playerSlot);
                     const isSelected = selectedCard === card;
@@ -735,7 +735,7 @@ export default function OnlineGame() {
                         draggable={room.phase === 'placement' && !isPlaced}
                         onDragStart={() => room.phase === 'placement' && !isPlaced && handleDragStart(card, false)}
                         onClick={() => room.phase === 'placement' && !isPlaced && setSelectedCard(card)}
-                        className={`w-20 h-20 rounded-lg flex items-center justify-center text-sm font-bold shadow-xl border-2 transition-all ${
+                        className={`w-16 h-16 rounded-lg flex items-center justify-center text-xs font-bold shadow-xl border-2 transition-all ${
                           room.phase === 'placement' && !isPlaced
                             ? 'cursor-pointer border-white hover:scale-110 active:scale-95'
                             : 'border-white/30 cursor-default'
@@ -752,7 +752,7 @@ export default function OnlineGame() {
                           backgroundColor: playerSlot !== null ? getPlayerColorStyle(playerSlot) : '#4B5563',
                         }}
                       >
-                        <div className="text-white text-center px-2 leading-tight break-all">
+                        <div className="text-white text-center px-1 leading-tight break-all">
                           {card}
                         </div>
                       </div>
@@ -760,7 +760,7 @@ export default function OnlineGame() {
                   })}
                 </div>
                 {selectedCard && room.phase === 'placement' && (
-                  <div className="mt-3 text-sm bg-blue-900/50 border border-blue-400 rounded px-3 py-2">
+                  <div className="mt-2 text-xs bg-blue-900/50 border border-blue-400 rounded px-2 py-1.5">
                     <span className="text-blue-300">📌 選択中:</span> <span className="text-white font-bold">{selectedCard}</span>
                     <span className="text-gray-400 ml-2">→ ボードをタップして配置</span>
                   </div>

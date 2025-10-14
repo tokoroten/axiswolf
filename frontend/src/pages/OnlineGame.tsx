@@ -723,32 +723,46 @@ export default function OnlineGame() {
 
             {myHand.length > 0 && (
               <div className="bg-gray-800 p-4 rounded mb-4">
-                <h2 className="font-bold mb-2">手札（ドラッグ&ドロップで配置）</h2>
-                <div className="flex gap-2 flex-wrap">
+                <h2 className="font-bold mb-3 text-lg">🎴 あなたの手札</h2>
+                <p className="text-sm text-gray-400 mb-3">カードをタップして選択 → ボードをタップして配置</p>
+                <div className="flex gap-3 flex-wrap">
                   {myHand.map((card) => {
                     const isPlaced = placedCards.some(c => c.card_id === card && c.player_slot === playerSlot);
+                    const isSelected = selectedCard === card;
                     return (
                       <div
                         key={card}
                         draggable={room.phase === 'placement' && !isPlaced}
                         onDragStart={() => room.phase === 'placement' && !isPlaced && handleDragStart(card, false)}
                         onClick={() => room.phase === 'placement' && !isPlaced && setSelectedCard(card)}
-                        className={`px-4 py-2 rounded font-medium transition-all ${
+                        className={`w-20 h-20 rounded-lg flex items-center justify-center text-sm font-bold shadow-xl border-2 transition-all ${
                           room.phase === 'placement' && !isPlaced
-                            ? 'cursor-move ' + (selectedCard === card ? 'bg-blue-600 scale-105 shadow-lg' : 'bg-gray-700 hover:bg-gray-600')
-                            : isPlaced
-                              ? 'bg-gray-600 opacity-50 cursor-default'
-                              : 'bg-gray-700 cursor-default'
+                            ? 'cursor-pointer border-white hover:scale-110 active:scale-95'
+                            : 'border-white/30 cursor-default'
+                        } ${
+                          isSelected
+                            ? 'scale-110 ring-4 ring-blue-400 z-10'
+                            : ''
+                        } ${
+                          isPlaced
+                            ? 'opacity-30'
+                            : ''
                         }`}
+                        style={{
+                          backgroundColor: playerSlot !== null ? getPlayerColorStyle(playerSlot) : '#4B5563',
+                        }}
                       >
-                        {card}
+                        <div className="text-white text-center px-2 leading-tight break-all">
+                          {card}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
                 {selectedCard && room.phase === 'placement' && (
-                  <div className="mt-2 text-sm text-blue-400">
-                    選択中: {selectedCard} - ドラッグ or クリックで配置
+                  <div className="mt-3 text-sm bg-blue-900/50 border border-blue-400 rounded px-3 py-2">
+                    <span className="text-blue-300">📌 選択中:</span> <span className="text-white font-bold">{selectedCard}</span>
+                    <span className="text-gray-400 ml-2">→ ボードをタップして配置</span>
                   </div>
                 )}
               </div>

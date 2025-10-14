@@ -110,12 +110,14 @@ export default function OnlineGame() {
       myHandLength: myHand.length
     });
 
-    if (room && room.axis_payload && room.round_seed && playerSlot !== null && players.length > 0) {
-      // resultsフェーズでは軸を設定しない（gameResultsから設定する）
-      if (room.phase === 'results') {
-        return;
-      }
+    // resultsフェーズでは軸をクリア（gameResultsから設定するため）
+    if (room?.phase === 'results') {
+      console.log('[OnlineGame] Results phase detected, clearing myAxis');
+      setMyAxis(null);
+      return;
+    }
 
+    if (room && room.axis_payload && room.round_seed && playerSlot !== null && players.length > 0) {
       // 軸データを取得
       const axisData = typeof room.axis_payload === 'string'
         ? JSON.parse(room.axis_payload)
@@ -125,7 +127,7 @@ export default function OnlineGame() {
       const wolfSlot = room.wolf_slot;
       const isWolf = wolfSlot !== undefined && wolfSlot !== null && playerSlot === wolfSlot;
 
-      console.log('[OnlineGame] Setting axis', { playerSlot, wolfSlot, isWolf });
+      console.log('[OnlineGame] Setting axis', { playerSlot, wolfSlot, isWolf, roundSeed: room.round_seed });
 
       if (isWolf && room.wolf_axis_payload) {
         const wolfAxisData = typeof room.wolf_axis_payload === 'string'
@@ -158,7 +160,7 @@ export default function OnlineGame() {
         });
       }
     }
-  }, [room, playerSlot, players.length, fetchHand]);
+  }, [room, playerSlot, players.length, fetchHand, room?.phase, room?.round_seed]);
 
   // resultsフェーズになったら結果を取得（非ホストプレイヤー用）
   useEffect(() => {
@@ -622,11 +624,11 @@ export default function OnlineGame() {
               <h2 className="font-bold mb-2 text-yellow-300">🔗 プレイヤーを招待</h2>
               <p className="text-sm text-gray-300 mb-3">このリンクやQRコードを共有してプレイヤーを招待しましょう</p>
 
-              <div className="flex flex-col md:flex-row gap-4 items-start">
+              <div className="flex flex-col sm:flex-row gap-4 items-start">
                 {/* QRコード */}
                 {qrCodeUrl && (
-                  <div className="bg-white p-3 rounded-lg mx-auto md:mx-0">
-                    <img src={qrCodeUrl} alt="招待用QRコード" className="w-40 h-40" />
+                  <div className="bg-white p-3 rounded-lg mx-auto sm:mx-0 flex-shrink-0">
+                    <img src={qrCodeUrl} alt="招待用QRコード" className="w-40 h-40 object-contain aspect-square" />
                   </div>
                 )}
 

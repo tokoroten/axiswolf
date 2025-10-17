@@ -37,6 +37,13 @@ export default function OnlineGame() {
   const [shouldBlinkNextRound, setShouldBlinkNextRound] = useState(false);
   const [activeTab, setActiveTab] = useState<'game' | 'chat'>('game'); // モバイル用タブ切り替え
   const [isMobile, setIsMobile] = useState(false);
+  const [chatMessages, setChatMessages] = useState<Array<{
+    player_id: string;
+    player_name: string;
+    player_slot: number;
+    message: string;
+    timestamp: string;
+  }>>([]);
 
   // 画面サイズによってモバイルかどうかを判定
   useEffect(() => {
@@ -47,6 +54,28 @@ export default function OnlineGame() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // チャットメッセージの受信処理
+  useEffect(() => {
+    const handleChatMessage = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const data = customEvent.detail;
+
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          player_id: data.player_id,
+          player_name: data.player_name,
+          player_slot: data.player_slot,
+          message: data.message,
+          timestamp: data.timestamp,
+        },
+      ]);
+    };
+
+    window.addEventListener('chat-message', handleChatMessage);
+    return () => window.removeEventListener('chat-message', handleChatMessage);
   }, []);
 
   // roomCodeがない場合、LocalStorageから復元を試みる
@@ -996,8 +1025,8 @@ export default function OnlineGame() {
         )}
 
         {/* チャットコンテンツ（モバイルではタブで切り替え、デスクトップでは非表示） */}
-        {isMobile && activeTab === 'chat' && (
-          <div className="bg-gray-800 rounded-lg p-4">
+        {isMobile && (
+          <div className={`bg-gray-800 rounded-lg p-4 ${activeTab === 'game' ? 'hidden' : ''}`}>
             <ChatPanel
               players={players}
               currentPlayerId={playerId}
@@ -1005,6 +1034,7 @@ export default function OnlineGame() {
               isCollapsed={false}
               onToggleCollapse={() => {}}
               isMobileFullScreen={true}
+              messages={chatMessages}
             />
           </div>
         )}
@@ -1021,6 +1051,7 @@ export default function OnlineGame() {
           ws={ws}
           isCollapsed={isChatCollapsed}
           onToggleCollapse={() => setIsChatCollapsed(!isChatCollapsed)}
+          messages={chatMessages}
         />
       )}
     </div>

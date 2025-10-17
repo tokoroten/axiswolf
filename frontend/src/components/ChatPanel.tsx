@@ -17,6 +17,7 @@ interface ChatPanelProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   isMobileFullScreen?: boolean; // モバイル全画面モード
+  messages: ChatMessage[]; // 親から渡されたメッセージ
 }
 
 export default function ChatPanel({
@@ -26,8 +27,8 @@ export default function ChatPanel({
   isCollapsed,
   onToggleCollapse,
   isMobileFullScreen = false,
+  messages,
 }: ChatPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [hasUnread, setHasUnread] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -64,40 +65,23 @@ export default function ChatPanel({
     scrollToBottom();
   }, [messages]);
 
-  // カスタムイベント経由でチャットメッセージを受信
+  // メッセージが追加されたら通知処理
   useEffect(() => {
-    const handleChatMessage = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const data = customEvent.detail;
+    if (messages.length === 0) return;
 
-      // 自分のメッセージかどうかをチェック
-      const isOwnMessage = data.player_id === currentPlayerId;
+    const lastMessage = messages[messages.length - 1];
+    const isOwnMessage = lastMessage.player_id === currentPlayerId;
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          player_id: data.player_id,
-          player_name: data.player_name,
-          player_slot: data.player_slot,
-          message: data.message,
-          timestamp: data.timestamp,
-        },
-      ]);
+    // 自分以外のメッセージの場合のみ通知音を再生
+    if (!isOwnMessage) {
+      playNotificationSound();
+    }
 
-      // 自分以外のメッセージの場合のみ通知音を再生
-      if (!isOwnMessage) {
-        playNotificationSound();
-      }
-
-      // チャットが閉じている場合は未読マークを付ける
-      if (isCollapsed && !isOwnMessage) {
-        setHasUnread(true);
-      }
-    };
-
-    window.addEventListener('chat-message', handleChatMessage);
-    return () => window.removeEventListener('chat-message', handleChatMessage);
-  }, [isCollapsed, currentPlayerId]);
+    // チャットが閉じている場合は未読マークを付ける
+    if (isCollapsed && !isOwnMessage) {
+      setHasUnread(true);
+    }
+  }, [messages.length, isCollapsed, currentPlayerId]);
 
   // メッセージ送信
   const sendMessage = () => {

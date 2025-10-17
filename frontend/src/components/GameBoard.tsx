@@ -57,6 +57,18 @@ export default function GameBoard({
     return saved ? parseInt(saved, 10) : 100;
   });
 
+  // モバイル判定
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // サイズが変更されたらlocalStorageに保存
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, size.toString());
@@ -89,30 +101,32 @@ export default function GameBoard({
 
   return (
     <div className="relative w-full">
-      {/* ズームコントロール */}
-      <div className="absolute top-2 right-2 z-30 flex gap-2 bg-white rounded-lg shadow-lg p-2">
-        <button
-          onClick={handleZoomOut}
-          className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-lg"
-          title="縮小"
-        >
-          −
-        </button>
-        <button
-          onClick={handleZoomReset}
-          className="w-8 h-8 flex items-center justify-center bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
-          title="リセット"
-        >
-          ◯
-        </button>
-        <button
-          onClick={handleZoomIn}
-          className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-lg"
-          title="拡大"
-        >
-          +
-        </button>
-      </div>
+      {/* ズームコントロール（デスクトップはフローティング、モバイルは下部） */}
+      {!isMobile && (
+        <div className="absolute top-2 right-2 z-30 flex gap-2 bg-white rounded-lg shadow-lg p-2">
+          <button
+            onClick={handleZoomOut}
+            className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-lg"
+            title="縮小"
+          >
+            −
+          </button>
+          <button
+            onClick={handleZoomReset}
+            className="w-8 h-8 flex items-center justify-center bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+            title="リセット"
+          >
+            ◯
+          </button>
+          <button
+            onClick={handleZoomIn}
+            className="w-8 h-8 flex items-center justify-center bg-blue-500 text-white rounded hover:bg-blue-600 font-bold text-lg"
+            title="拡大"
+          >
+            +
+          </button>
+        </div>
+      )}
 
       <div
         onClick={interactive ? onBoardClick : undefined}
@@ -146,34 +160,34 @@ export default function GameBoard({
       <div className="absolute top-1/2 left-0 right-0 h-px bg-gray-400"></div>
 
       {/* エリアラベル */}
-      <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl font-bold text-red-500 opacity-50 z-10 pointer-events-none">A</div>
-      <div className="absolute bottom-1/4 left-1/2 transform -translate-x-1/2 translate-y-1/2 text-6xl font-bold text-blue-500 opacity-50 z-10 pointer-events-none">B</div>
-      <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2 text-6xl font-bold text-green-500 opacity-50 z-10 pointer-events-none">C</div>
-      <div className="absolute right-1/4 top-1/2 transform -translate-y-1/2 translate-x-1/2 text-6xl font-bold text-yellow-600 opacity-50 z-10 pointer-events-none">D</div>
+      <div className={`absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 font-bold text-red-500 opacity-50 z-10 pointer-events-none ${isMobile ? 'text-3xl' : 'text-6xl'}`}>A</div>
+      <div className={`absolute bottom-1/4 left-1/2 transform -translate-x-1/2 translate-y-1/2 font-bold text-blue-500 opacity-50 z-10 pointer-events-none ${isMobile ? 'text-3xl' : 'text-6xl'}`}>B</div>
+      <div className={`absolute left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2 font-bold text-green-500 opacity-50 z-10 pointer-events-none ${isMobile ? 'text-3xl' : 'text-6xl'}`}>C</div>
+      <div className={`absolute right-1/4 top-1/2 transform -translate-y-1/2 translate-x-1/2 font-bold text-yellow-600 opacity-50 z-10 pointer-events-none ${isMobile ? 'text-3xl' : 'text-6xl'}`}>D</div>
 
       {/* 軸ラベル表示 */}
       <>
         {/* 縦軸 上 (A) - 正解の軸 */}
         <div className="absolute top-2 left-1/2 transform -translate-x-1/2 pointer-events-none z-20">
-          <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-400 shadow-md">
+          <div className={`bg-white rounded-lg font-bold border-2 border-gray-400 shadow-md ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-lg'}`}>
             <span className="text-red-600">(A) {getAxisLabel(axis, 'vertical-negative')}</span>
           </div>
         </div>
         {/* 縦軸 下 (B) - 正解の軸 */}
         <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 pointer-events-none z-20">
-          <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-400 shadow-md">
+          <div className={`bg-white rounded-lg font-bold border-2 border-gray-400 shadow-md ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-lg'}`}>
             <span className="text-blue-600">(B) {getAxisLabel(axis, 'vertical-positive')}</span>
           </div>
         </div>
         {/* 横軸 左 (C) - 正解の軸 */}
         <div className="absolute left-2 top-1/2 transform -translate-y-1/2 pointer-events-none z-20">
-          <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-400 shadow-md">
+          <div className={`bg-white rounded-lg font-bold border-2 border-gray-400 shadow-md ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-lg'}`}>
             <span className="text-green-600">(C) {getAxisLabel(axis, 'horizontal-negative')}</span>
           </div>
         </div>
         {/* 横軸 右 (D) - 正解の軸 */}
         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none z-20">
-          <div className="bg-white px-4 py-2 rounded-lg font-bold text-lg border-2 border-gray-400 shadow-md">
+          <div className={`bg-white rounded-lg font-bold border-2 border-gray-400 shadow-md ${isMobile ? 'px-2 py-1 text-xs' : 'px-4 py-2 text-lg'}`}>
             <span className="text-yellow-700">(D) {getAxisLabel(axis, 'horizontal-positive')}</span>
           </div>
         </div>
@@ -182,29 +196,29 @@ export default function GameBoard({
         {wolfAxis && (
           <>
             {getAxisLabel(wolfAxis, 'vertical-negative') !== getAxisLabel(axis, 'vertical-negative') && (
-              <div className="absolute top-12 left-1/2 transform -translate-x-1/2 pointer-events-none z-20">
-                <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
+              <div className={`absolute left-1/2 transform -translate-x-1/2 pointer-events-none z-20 ${isMobile ? 'top-8' : 'top-12'}`}>
+                <div className={`bg-red-50 rounded-lg border-2 border-dashed border-red-400 ${isMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-3 py-1 text-sm'}`}>
                   <span className="text-red-600">人狼: {getAxisLabel(wolfAxis, 'vertical-negative')}</span>
                 </div>
               </div>
             )}
             {getAxisLabel(wolfAxis, 'vertical-positive') !== getAxisLabel(axis, 'vertical-positive') && (
-              <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 pointer-events-none z-20">
-                <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
+              <div className={`absolute left-1/2 transform -translate-x-1/2 pointer-events-none z-20 ${isMobile ? 'bottom-8' : 'bottom-12'}`}>
+                <div className={`bg-red-50 rounded-lg border-2 border-dashed border-red-400 ${isMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-3 py-1 text-sm'}`}>
                   <span className="text-red-600">人狼: {getAxisLabel(wolfAxis, 'vertical-positive')}</span>
                 </div>
               </div>
             )}
             {getAxisLabel(wolfAxis, 'horizontal-negative') !== getAxisLabel(axis, 'horizontal-negative') && (
-              <div className="absolute left-2 top-[56%] transform -translate-y-1/2 pointer-events-none z-20">
-                <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
+              <div className={`absolute left-2 transform -translate-y-1/2 pointer-events-none z-20 ${isMobile ? 'top-[54%]' : 'top-[56%]'}`}>
+                <div className={`bg-red-50 rounded-lg border-2 border-dashed border-red-400 ${isMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-3 py-1 text-sm'}`}>
                   <span className="text-red-600">人狼: {getAxisLabel(wolfAxis, 'horizontal-negative')}</span>
                 </div>
               </div>
             )}
             {getAxisLabel(wolfAxis, 'horizontal-positive') !== getAxisLabel(axis, 'horizontal-positive') && (
-              <div className="absolute right-2 top-[56%] transform -translate-y-1/2 pointer-events-none z-20">
-                <div className="bg-red-50 px-3 py-1 rounded-lg text-sm border-2 border-dashed border-red-400">
+              <div className={`absolute right-2 transform -translate-y-1/2 pointer-events-none z-20 ${isMobile ? 'top-[54%]' : 'top-[56%]'}`}>
+                <div className={`bg-red-50 rounded-lg border-2 border-dashed border-red-400 ${isMobile ? 'px-1.5 py-0.5 text-[10px]' : 'px-3 py-1 text-sm'}`}>
                   <span className="text-red-600">人狼: {getAxisLabel(wolfAxis, 'horizontal-positive')}</span>
                 </div>
               </div>
@@ -232,7 +246,9 @@ export default function GameBoard({
                 onCardClick(card.card_id);
               }
             }}
-            className={`absolute w-16 h-16 rounded-lg flex flex-col items-center justify-center text-xs font-bold shadow-xl border-2 hover:scale-110 hover:z-20 transition-all ${
+            className={`absolute rounded-lg flex flex-col items-center justify-center font-bold shadow-xl border-2 hover:scale-110 hover:z-20 transition-all ${
+              isMobile ? 'w-12 h-12 text-[10px]' : 'w-16 h-16 text-xs'
+            } ${
               isDraggable ? 'cursor-pointer border-white' : 'cursor-default border-white/50'
             } ${isSelected ? 'scale-110 ring-4 ring-blue-400 z-30' : ''}`}
             style={{
@@ -246,7 +262,7 @@ export default function GameBoard({
           >
             <div className="text-white text-center px-1 leading-tight break-all">{card.card_id}</div>
             {!isMyCard && (
-              <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white"
+              <div className={`absolute -bottom-1 -right-1 rounded-full border border-white ${isMobile ? 'w-2 h-2' : 'w-3 h-3'}`}
                 style={{ backgroundColor: getPlayerColorStyle(card.player_slot) }}
               ></div>
             )}
@@ -254,6 +270,33 @@ export default function GameBoard({
         );
       })}
       </div>
+
+      {/* モバイル用ズームコントロール（盤面の下） */}
+      {isMobile && (
+        <div className="flex justify-center gap-3 mt-4">
+          <button
+            onClick={handleZoomOut}
+            className="w-12 h-12 flex items-center justify-center bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold text-xl shadow-lg active:scale-95 transition-all"
+            title="縮小"
+          >
+            −
+          </button>
+          <button
+            onClick={handleZoomReset}
+            className="w-12 h-12 flex items-center justify-center bg-gray-500 text-white rounded-lg hover:bg-gray-600 text-base shadow-lg active:scale-95 transition-all"
+            title="リセット"
+          >
+            ◯
+          </button>
+          <button
+            onClick={handleZoomIn}
+            className="w-12 h-12 flex items-center justify-center bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-bold text-xl shadow-lg active:scale-95 transition-all"
+            title="拡大"
+          >
+            +
+          </button>
+        </div>
+      )}
     </div>
   );
 }

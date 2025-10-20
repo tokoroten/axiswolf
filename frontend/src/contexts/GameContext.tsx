@@ -144,6 +144,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     const maxReconnectAttempts = 5;
     const reconnectDelay = 2000; // 2秒
     let pingInterval: NodeJS.Timeout | null = null;
+    let syncInterval: NodeJS.Timeout | null = null;
 
     const connect = () => {
       // 初回接続のみ過去ログをロード
@@ -193,6 +194,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
             websocket.send(JSON.stringify({ type: 'ping' }));
           }
         }, 3 * 60 * 1000); // 3分 = 180,000ミリ秒
+
+        // 30秒ごとにカード配置状況を同期（パケットロス対策）
+        syncInterval = setInterval(async () => {
+          if (websocket && websocket.readyState === WebSocket.OPEN && room) {
+            // 配置/投票/結果フェーズの時のみ同期
+            if (room.phase === 'placement' || room.phase === 'voting' || room.phase === 'results') {
+              try {
+                const { cards: syncedCards } = await api.getCards(room.room_code);
+                console.log(`[GameContext/Sync] 定期同期: ${syncedCards.length}枚のカードを取得`);
+                setPlacedCards(syncedCards);
+              } catch (err) {
+                console.error('[GameContext/Sync] 定期同期エラー:', err);
+              }
+            }
+          }
+        }, 30 * 1000); // 30秒 = 30,000ミリ秒
       };
 
       websocket.onmessage = (event) => {
@@ -251,12 +268,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
           case 'phase_changed':
             // フェーズが変更されたら、サーバーから最新のルーム情報を取得
             // (軸データやシード値が更新されている可能性があるため)
-            api.getRoom(room.room_code).then(({ room: updatedRoom }) => {
+            api.getRoom(room.room_code).then(async ({ room: updatedRoom }) => {
               setRoom(updatedRoom);
 
-              // 投票フェーズに入ったら投票をクリア
+              // 投票フェーズに入ったら投票をクリアし、カードを再同期（パケットロス対策）
               if (updatedRoom.phase === 'voting') {
                 setVotes([]);
+
+                try {
+                  const { cards: latestCards } = await api.getCards(room.room_code);
+                  setPlacedCards(latestCards);
+                  console.log(`[GameContext/Phase] 投票フェーズへ移行: ${latestCards.length}枚のカードを再同期`);
+                } catch (err) {
+                  console.error('[GameContext/Phase] カード再同期エラー:', err);
+                }
               }
             });
             break;
@@ -324,6 +349,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
           pingInterval = null;
         }
 
+        // syncタイマーをクリア
+        if (syncInterval) {
+          clearInterval(syncInterval);
+          syncInterval = null;
+        }
+
         // 正常なクローズ（コード1000）または意図的なクローズの場合は再接続しない
         if (event.code === 1000 || event.wasClean) {
           console.log('[GameContext] 正常なクローズのため再接続しません');
@@ -354,6 +385,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       // pingタイマーをクリア
       if (pingInterval) {
         clearInterval(pingInterval);
+      }
+
+      // syncタイマーをクリア
+      if (syncInterval) {
+        clearInterval(syncInterval);
       }
 
       if (websocket) {

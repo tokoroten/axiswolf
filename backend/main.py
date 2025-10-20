@@ -761,6 +761,13 @@ async def update_phase(
         if room_code in votes:
             votes[room_code] = []
 
+    # placementフェーズに移行する場合（新規ゲーム開始時）もカードと投票をクリア
+    if req.phase == 'placement':
+        if room_code in cards:
+            cards[room_code] = []
+        if room_code in votes:
+            votes[room_code] = []
+
     # 結果フェーズに移行する際にスコア計算を実行
     if req.phase == 'results':
         room = rooms[room_code]

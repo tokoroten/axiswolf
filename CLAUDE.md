@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Communication Language
+
+**Always respond in Japanese (日本語)** when interacting with the user. All explanations, status updates, and responses should be in Japanese unless explicitly requested otherwise.
+
 ## Project Overview
 
 "Axis Wolf (アクシスウルフ)" is a social deduction game combining physical cards with a web-based system. Players place cards on a 4-quadrant axis to identify the werewolf who sees slightly different axes than other players.

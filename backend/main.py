@@ -1383,24 +1383,24 @@ if static_dir.exists():
     # 静的ファイルを配信
     app.mount("/assets", StaticFiles(directory=str(static_dir / "assets")), name="assets")
 
-    # SPAのフォールバック: すべてのルートでindex.htmlを返す
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        # APIルートは除外
-        if full_path.startswith("api/") or full_path.startswith("ws/"):
-            return {"error": "Not found"}
+    # SPAのindex.htmlを直接配信
+    @app.get("/", response_class=FileResponse)
+    async def serve_root():
+        return FileResponse(static_dir / "index.html")
 
-        # 静的ファイルが存在すればそれを返す
-        file_path = static_dir / full_path
-        if file_path.is_file():
-            return FileResponse(file_path)
+    # 404エラーハンドラー: API以外の全てのパスでindex.htmlを返す（SPAルーティング用）
+    @app.exception_handler(404)
+    async def custom_404_handler(request, exc):
+        # API/WSリクエストの場合は通常の404を返す
+        if request.url.path.startswith("/api/") or request.url.path.startswith("/ws/"):
+            raise exc
 
-        # それ以外はindex.htmlを返す（SPAのルーティング用）
+        # それ以外（SPAルート）の場合はindex.htmlを返す
         index_path = static_dir / "index.html"
         if index_path.is_file():
             return FileResponse(index_path)
 
-        return {"error": "Static files not found"}
+        raise exc
 
     print(f"[STATIC] Serving static files from {static_dir}")
 

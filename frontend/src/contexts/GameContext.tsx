@@ -90,17 +90,29 @@ export function GameProvider({ children }: { children: ReactNode }) {
             // 配置済みカードを復元（プレイ中の場合）
             let existingCards: typeof placedCards = [];
             if (newRoom.phase === 'placement' || newRoom.phase === 'voting' || newRoom.phase === 'results') {
-              const cardsData = await api.getCards(savedRoomCode);
-              existingCards = cardsData.cards;
-              console.log(`[GameContext] ${existingCards.length}枚の配置済みカードを復元します`);
+              try {
+                const cardsData = await api.getCards(savedRoomCode);
+                console.log('[GameContext] getCards response:', cardsData);
+                existingCards = cardsData.cards || [];
+                console.log(`[GameContext] ${existingCards.length}枚の配置済みカードを復元します`);
+              } catch (error) {
+                console.error('[GameContext] カード取得エラー:', error);
+                existingCards = [];
+              }
             }
 
             // 投票を復元（投票/結果フェーズの場合）
             let existingVotes: typeof votes = [];
             if (newRoom.phase === 'voting' || newRoom.phase === 'results') {
-              const votesData = await api.getVotes(savedRoomCode);
-              existingVotes = votesData.votes;
-              console.log(`[GameContext] ${existingVotes.length}件の投票を復元します`);
+              try {
+                const votesData = await api.getVotes(savedRoomCode);
+                console.log('[GameContext] getVotes response:', votesData);
+                existingVotes = votesData.votes || [];
+                console.log(`[GameContext] ${existingVotes.length}件の投票を復元します`);
+              } catch (error) {
+                console.error('[GameContext] 投票取得エラー:', error);
+                existingVotes = [];
+              }
             }
 
             // すべてのデータが揃ってから状態を一度に更新

@@ -95,6 +95,16 @@ export default function OnlineGame() {
   // 直接URLアクセス時の対応：必要な接続情報が無い場合はOnlineHomeにリダイレクト
   useEffect(() => {
     if (roomCode && !room && !playerId) {
+      // LocalStorageに接続情報がある場合は、GameContextの再接続処理を待つ
+      const savedRoomCode = localStorage.getItem('online_room_code');
+      const savedPlayerId = localStorage.getItem('online_player_id');
+
+      if (savedRoomCode === roomCode && savedPlayerId) {
+        // 再接続中なので待つ（何もしない）
+        console.log('[OnlineGame] LocalStorageに接続情報があるため、GameContextの再接続処理を待ちます');
+        return;
+      }
+
       // roomCodeはあるが、playerId（接続情報）が無い = 直接URLアクセス
       // OnlineHomeにルームコード付きでリダイレクト
       console.log('[OnlineGame] 接続情報が不足しているため、OnlineHomeにリダイレクトします');

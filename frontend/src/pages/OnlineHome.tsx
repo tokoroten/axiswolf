@@ -5,7 +5,7 @@ import { useGame } from '../contexts/GameContext';
 export default function OnlineHome() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { createRoom, joinRoom } = useGame();
+  const { createRoom, joinRoom, resetGameState } = useGame();
   const [mode, setMode] = useState<'create' | 'join'>('create');
   const [roomCode, setRoomCode] = useState('');
   const [playerName, setPlayerName] = useState(() => {
@@ -27,6 +27,13 @@ export default function OnlineHome() {
   });
   const [savedRoom, setSavedRoom] = useState<{ roomCode: string; playerName: string } | null>(null);
   const [showRules, setShowRules] = useState(false);
+
+  // ロビーに入った時にゲーム状態をリセット（古い状態を消す）
+  useEffect(() => {
+    console.log('[OnlineHome] ロビーに入ったのでゲーム状態をリセット');
+    resetGameState();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // URLパラメータからルームコードを取得
   useEffect(() => {

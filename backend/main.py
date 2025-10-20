@@ -954,6 +954,19 @@ async def place_card(
 
     return {"success": True}
 
+# 配置済みカード取得
+@app.get("/api/rooms/{room_code}/cards")
+async def get_cards(room_code: str):
+    """
+    ルーム内の配置済みカードを全て取得
+    再接続時に既存の配置情報を復元するために使用
+    """
+    if room_code not in rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    room_cards = cards.get(room_code, [])
+    return {"cards": room_cards}
+
 # 手札取得
 @app.get("/api/rooms/{room_code}/hand")
 async def get_hand(

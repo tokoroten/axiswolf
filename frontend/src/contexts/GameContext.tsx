@@ -13,6 +13,7 @@ interface GameContextType {
   playerId: string;
   ws: WebSocket | null;
   isHost: boolean;
+  resetGameState: () => void;
   joinRoom: (roomCode: string, playerId: string, playerName: string) => Promise<void>;
   createRoom: (roomCode: string, playerId: string, playerName: string) => Promise<void>;
   updatePhase: (phase: string, axisPayload?: AxisPayload, wolfAxisPayload?: AxisPayload, roundSeed?: string) => Promise<void>;
@@ -73,18 +74,44 @@ export function GameProvider({ children }: { children: ReactNode }) {
         // 再接続を試みる（直接APIを呼ぶ）
         (async () => {
           try {
+            // Bug #2 Fix: すべてのデータを先に取得してから状態を更新
+            // これによりWebSocketが接続される前にすべてのデータが揃う
+            console.log('[GameContext] 再接続データを取得中...');
+
             // リロード時は直接joinRoomを呼ぶ（既存プレイヤーとして認識される）
             const { player_slot, token } = await api.joinRoom(savedRoomCode, savedPlayerId, savedPlayerName);
             const { room: newRoom, players: newPlayers } = await api.getRoom(savedRoomCode);
-            setRoom(newRoom);
-            setPlayers(newPlayers);
-            setPlayerSlot(player_slot);
-            setPlayerId(savedPlayerId);
 
             // 新しいトークンを保存（既存プレイヤーでも更新される可能性がある）
             if (token) {
               localStorage.setItem('online_player_token', token);
             }
+
+            // 配置済みカードを復元（プレイ中の場合）
+            let existingCards: typeof placedCards = [];
+            if (newRoom.phase === 'placement' || newRoom.phase === 'voting' || newRoom.phase === 'results') {
+              const cardsData = await api.getCards(savedRoomCode);
+              existingCards = cardsData.cards;
+              console.log(`[GameContext] ${existingCards.length}枚の配置済みカードを復元します`);
+            }
+
+            // 投票を復元（投票/結果フェーズの場合）
+            let existingVotes: typeof votes = [];
+            if (newRoom.phase === 'voting' || newRoom.phase === 'results') {
+              const votesData = await api.getVotes(savedRoomCode);
+              existingVotes = votesData.votes;
+              console.log(`[GameContext] ${existingVotes.length}件の投票を復元します`);
+            }
+
+            // すべてのデータが揃ってから状態を一度に更新
+            // これによりWebSocket effectは完全なデータで開始される
+            console.log('[GameContext] 状態を更新してWebSocketを接続します');
+            setPlayers(newPlayers);
+            setPlayerSlot(player_slot);
+            setPlayerId(savedPlayerId);
+            setPlacedCards(existingCards);
+            setVotes(existingVotes);
+            setRoom(newRoom); // 最後にroomを設定してWebSocket effectをトリガー
 
             console.log('[GameContext] 再接続に成功しました');
           } catch (err) {
@@ -112,9 +139,39 @@ export function GameProvider({ children }: { children: ReactNode }) {
       websocket = api.connectWebSocket(room.room_code, playerId, loadHistory);
       setWs(websocket);
 
-      websocket.onopen = () => {
+      websocket.onopen = async () => {
         console.log('[GameContext] WebSocket接続しました');
         reconnectAttempts = 0; // 成功したらリセット
+
+        // Bug #5 Fix: 再接続時は最新データを取得（初回接続は除く）
+        if (!isFirstConnection.current) {
+          console.log('[GameContext] WebSocket再接続のため最新データを取得中...');
+          try {
+            // 最新のルーム情報とプレイヤーリストを取得
+            const { room: latestRoom, players: latestPlayers } = await api.getRoom(room.room_code);
+            setRoom(latestRoom);
+            setPlayers(latestPlayers);
+
+            // 配置済みカードを再取得（プレイ中の場合）
+            if (latestRoom.phase === 'placement' || latestRoom.phase === 'voting' || latestRoom.phase === 'results') {
+              const { cards: latestCards } = await api.getCards(room.room_code);
+              setPlacedCards(latestCards);
+              console.log(`[GameContext] ${latestCards.length}枚の配置済みカードを再取得しました`);
+            }
+
+            // 投票を再取得（投票/結果フェーズの場合）
+            if (latestRoom.phase === 'voting' || latestRoom.phase === 'results') {
+              const { votes: latestVotes } = await api.getVotes(room.room_code);
+              setVotes(latestVotes);
+              console.log(`[GameContext] ${latestVotes.length}件の投票を再取得しました`);
+            }
+
+            console.log('[GameContext] 再接続後のデータ同期が完了しました');
+          } catch (err) {
+            console.error('[GameContext] 再接続後のデータ取得に失敗しました:', err);
+          }
+        }
+
         isFirstConnection.current = false; // 初回接続完了
 
         // 3分ごとにpingを送信してサーバーをアクティブに保つ
@@ -294,17 +351,36 @@ export function GameProvider({ children }: { children: ReactNode }) {
     };
   }, [room?.room_code, playerId]);
 
+  // ゲーム状態をリセットする関数（ロビーに戻る時などに使用）
+  const resetGameState = () => {
+    console.log('[GameContext] ゲーム状態をリセットします');
+    setRoom(null);
+    setPlayers([]);
+    setPlacedCards([]);
+    setVotes([]);
+    setPlayerSlot(null);
+    // playerId は保持（プレイヤーIDは変更しない）
+    // WebSocketは useEffect で自動的にクローズされる
+
+    // Bug #1 Fix: 次のルームで履歴をロードするためにフラグをリセット
+    isFirstConnection.current = true;
+
+    // LocalStorageは保持（「前回のゲームに戻る」機能のため）
+    // 新しいルーム参加時に自動的に上書きされる
+  };
+
   const joinRoom = async (roomCode: string, pid: string, playerName: string) => {
+    // 先に古いゲーム状態をクリア（新しいルームの情報を設定する前に）
+    console.log('[GameContext] 新しいルーム参加前に古い状態をクリア');
+    setPlacedCards([]);
+    setVotes([]);
+
     const { player_slot, token } = await api.joinRoom(roomCode, pid, playerName);
     const { room: newRoom, players: newPlayers } = await api.getRoom(roomCode);
     setRoom(newRoom);
     setPlayers(newPlayers);
     setPlayerSlot(player_slot);
     setPlayerId(pid);
-
-    // 古いゲーム状態をクリア
-    setPlacedCards([]);
-    setVotes([]);
 
     // LocalStorageに保存（再接続用）
     localStorage.setItem('online_room_code', roomCode);
@@ -315,16 +391,17 @@ export function GameProvider({ children }: { children: ReactNode }) {
   };
 
   const createRoom = async (roomCode: string, pid: string, playerName: string) => {
+    // 先に古いゲーム状態をクリア（新しいルームの情報を設定する前に）
+    console.log('[GameContext] 新しいルーム作成前に古い状態をクリア');
+    setPlacedCards([]);
+    setVotes([]);
+
     const { token } = await api.createRoom(roomCode, pid, playerName);
     const { room: newRoom, players: newPlayers } = await api.getRoom(roomCode);
     setRoom(newRoom);
     setPlayers(newPlayers);
     setPlayerSlot(0);
     setPlayerId(pid);
-
-    // 古いゲーム状態をクリア
-    setPlacedCards([]);
-    setVotes([]);
 
     // LocalStorageに保存（再接続用）
     localStorage.setItem('online_room_code', roomCode);
@@ -403,6 +480,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         playerId,
         ws,
         isHost,
+        resetGameState,
         joinRoom,
         createRoom,
         updatePhase,

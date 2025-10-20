@@ -216,6 +216,12 @@ export const api = {
     return res.json();
   },
 
+  async getCards(roomCode: string): Promise<{ cards: PlacedCard[] }> {
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/cards`);
+    if (!res.ok) throw new Error('Failed to get cards');
+    return res.json();
+  },
+
   async getHand(roomCode: string, playerId: string): Promise<{ hand: string[]; player_slot: number }> {
     const res = await fetch(`${getApiBase()}/rooms/${roomCode}/hand?player_id=${playerId}`, {
       headers: getAuthHeaders(),

@@ -488,7 +488,7 @@ class CreateRoomRequest(BaseModel):
     player_id: str
     player_name: str
     hand_size: int = 5  # 配布する手札枚数（デフォルト5枚）
-    required_placement_count: int = 5  # 配置必須枚数（デフォルト5枚）
+    required_placement_count: int = 3  # 配置必須枚数（デフォルト3枚）
 
 class JoinRoomRequest(BaseModel):
     room_code: str

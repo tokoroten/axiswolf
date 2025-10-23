@@ -118,7 +118,7 @@ export const api = {
     return true;
   },
 
-  async createRoom(roomCode: string, playerId: string, playerName: string, handSize: number = 5, requiredPlacementCount: number = 5) {
+  async createRoom(roomCode: string, playerId: string, playerName: string, handSize: number = 5, requiredPlacementCount: number = 3) {
     const res = await fetch(`${getApiBase()}/rooms/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

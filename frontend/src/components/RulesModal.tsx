@@ -37,7 +37,7 @@ export default function RulesModal({ isOpen, onClose }: RulesModalProps) {
               <li><strong>必要なもの：</strong>カード40枚以上（商品、キャラクター、食べ物など）</li>
               <li><strong>ルーム作成：</strong>ホストがパスコードと難易度を設定</li>
               <li><strong>参加：</strong>各プレイヤーはQRコードを読み取るか、パスコードを入力して参加</li>
-              <li><strong>カード配布：</strong>シャッフルして各プレイヤーに5枚ずつ配る</li>
+              <li><strong>カード配布：</strong>シャッフルして各プレイヤーに規定枚数（デフォルト5枚）ずつ配る</li>
               <li><strong>山札：</strong>残りのカードを中央に置く</li>
             </ol>
           </section>

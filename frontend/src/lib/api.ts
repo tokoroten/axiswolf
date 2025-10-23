@@ -70,6 +70,8 @@ export interface Room {
   scores: string;
   themes: string | null;
   discussion_deadline: string | null;
+  hand_size: number; // 配布手札枚数
+  required_placement_count: number; // 配置必須枚数
   created_at: string;
   updated_at: string;
 }
@@ -116,11 +118,17 @@ export const api = {
     return true;
   },
 
-  async createRoom(roomCode: string, playerId: string, playerName: string) {
+  async createRoom(roomCode: string, playerId: string, playerName: string, handSize: number = 5, requiredPlacementCount: number = 5) {
     const res = await fetch(`${getApiBase()}/rooms/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ room_code: roomCode, player_id: playerId, player_name: playerName }),
+      body: JSON.stringify({
+        room_code: roomCode,
+        player_id: playerId,
+        player_name: playerName,
+        hand_size: handSize,
+        required_placement_count: requiredPlacementCount
+      }),
     });
     if (!res.ok) throw new Error('Failed to create room');
     return res.json();
@@ -298,6 +306,23 @@ export const api = {
     });
     handleAuthError(res);
     if (!res.ok) throw new Error('Failed to update themes');
+    return res.json();
+  },
+
+  async updateGameSettings(roomCode: string, handSize: number, requiredPlacementCount: number): Promise<{ success: boolean; hand_size: number; required_placement_count: number }> {
+    const playerId = localStorage.getItem('online_player_id');
+    if (!playerId) throw new Error('Player ID not found');
+
+    const res = await fetch(`${getApiBase()}/rooms/${roomCode}/game-settings?player_id=${playerId}`, {
+      method: 'POST',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        hand_size: handSize,
+        required_placement_count: requiredPlacementCount
+      }),
+    });
+    handleAuthError(res);
+    if (!res.ok) throw new Error('Failed to update game settings');
     return res.json();
   },
 

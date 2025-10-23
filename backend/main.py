@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Query, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, model_validator
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
@@ -487,6 +487,8 @@ class CreateRoomRequest(BaseModel):
     room_code: str
     player_id: str
     player_name: str
+    hand_size: int = 5  # 配布する手札枚数（デフォルト5枚）
+    required_placement_count: int = 5  # 配置必須枚数（デフォルト5枚）
 
 class JoinRoomRequest(BaseModel):
     room_code: str
@@ -511,6 +513,30 @@ class SubmitVoteRequest(BaseModel):
 class UpdateThemesRequest(BaseModel):
     themes: List[str]
 
+class UpdateGameSettingsRequest(BaseModel):
+    hand_size: int
+    required_placement_count: int
+
+    @field_validator('hand_size')
+    @classmethod
+    def validate_hand_size(cls, v):
+        if v < 1 or v > 10:
+            raise ValueError('hand_size must be between 1 and 10')
+        return v
+
+    @field_validator('required_placement_count')
+    @classmethod
+    def validate_required_placement_count(cls, v):
+        if v < 1 or v > 10:
+            raise ValueError('required_placement_count must be between 1 and 10')
+        return v
+
+    @model_validator(mode='after')
+    def validate_hand_size_vs_placement(self):
+        if self.hand_size < self.required_placement_count:
+            raise ValueError('hand_size must be greater than or equal to required_placement_count')
+        return self
+
 # ヘルスチェック
 @app.get("/api/health")
 async def health_check():
@@ -533,6 +559,8 @@ async def create_room(req: CreateRoomRequest):
         "selected_theme": None,  # ラウンドごとに決定されたテーマ
         "scores": "{}",
         "themes": json.dumps(['food', 'daily', 'entertainment']),  # デフォルトテーマ
+        "hand_size": req.hand_size,  # 手札枚数
+        "required_placement_count": req.required_placement_count,  # 配置必須枚数
         "created_at": now.isoformat(),
         "updated_at": now.isoformat(),
         "last_activity_at": now.isoformat(),
@@ -732,6 +760,55 @@ async def update_themes(
 
     return {"success": True, "themes": req.themes}
 
+# ゲーム設定更新
+@app.post("/api/rooms/{room_code}/game-settings")
+async def update_game_settings(
+    room_code: str,
+    req: UpdateGameSettingsRequest,
+    player_id: str = Depends(verify_player_token)
+):
+    if room_code not in rooms:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    room = rooms[room_code]
+
+    # ホストチェック（トークン認証が有効な場合のみ）
+    if REQUIRE_TOKEN_AUTH:
+        room_players = players.get(room_code, [])
+        player = next((p for p in room_players if p["player_id"] == player_id), None)
+        if not player or not player.get("is_host"):
+            raise HTTPException(status_code=403, detail="Only the host can update game settings")
+
+    # ロビー中のみ設定変更可能
+    if room["phase"] != "lobby":
+        raise HTTPException(status_code=400, detail="Cannot change settings after game has started")
+
+    # 値の検証
+    if req.hand_size < 1 or req.hand_size > 10:
+        raise HTTPException(status_code=400, detail="hand_size must be between 1 and 10")
+    if req.required_placement_count < 1 or req.required_placement_count > 10:
+        raise HTTPException(status_code=400, detail="required_placement_count must be between 1 and 10")
+
+    # 設定を更新
+    now = datetime.now()
+    rooms[room_code]["hand_size"] = req.hand_size
+    rooms[room_code]["required_placement_count"] = req.required_placement_count
+    rooms[room_code]["updated_at"] = now.isoformat()
+    rooms[room_code]["last_activity_at"] = now.isoformat()
+
+    # 他のプレイヤーに通知
+    await manager.broadcast(room_code, {
+        "type": "game_settings_updated",
+        "hand_size": req.hand_size,
+        "required_placement_count": req.required_placement_count
+    })
+
+    return {
+        "success": True,
+        "hand_size": req.hand_size,
+        "required_placement_count": req.required_placement_count
+    }
+
 # フェーズ更新
 @app.post("/api/rooms/{room_code}/phase")
 async def update_phase(
@@ -763,10 +840,13 @@ async def update_phase(
 
     # placementフェーズに移行する場合（新規ゲーム開始時）もカードと投票をクリア
     if req.phase == 'placement':
+        # ラウンド番号をインクリメント
+        rooms[room_code]["active_round"] = rooms[room_code].get("active_round", 0) + 1
         if room_code in cards:
             cards[room_code] = []
         if room_code in votes:
             votes[room_code] = []
+        print(f"[update_phase] New round started: active_round={rooms[room_code]['active_round']}", file=sys.stderr)
 
     # 結果フェーズに移行する際にスコア計算を実行
     if req.phase == 'results':
@@ -843,9 +923,10 @@ async def update_phase(
             else:
                 # 後方互換性：round_player_slotsが存在しない場合は現在のプレイヤーから生成
                 player_slots = sorted([p["player_slot"] for p in room_players])
-            all_hands_dict = generate_all_hands(room["round_seed"], player_slots, 5, themes)
+            hand_size = room.get("hand_size", 5)  # ルームの設定から手札枚数を取得
+            all_hands_dict = generate_all_hands(room["round_seed"], player_slots, hand_size, themes)
             all_hands = {str(slot): hand for slot, hand in all_hands_dict.items()}
-            print(f"[update_phase:results] Generated hands with player_slots={player_slots}", file=sys.stderr)
+            print(f"[update_phase:results] Generated hands with player_slots={player_slots}, hand_size={hand_size}", file=sys.stderr)
 
             # 結果をroomに保存
             room["round_results_calculated"] = True
@@ -1006,7 +1087,10 @@ async def get_hand(
     else:
         # 後方互換性：round_player_slotsが存在しない場合は現在のプレイヤーから生成
         player_slots = sorted([p["player_slot"] for p in room_players])
-    hand = generate_hand(player["player_slot"], room["round_seed"], player_slots, 5, themes)
+
+    # ルームの手札枚数設定を取得（デフォルト5枚）
+    hand_size = room.get("hand_size", 5)
+    hand = generate_hand(player["player_slot"], room["round_seed"], player_slots, hand_size, themes)
     print(f"[get_hand] Generated hand for player_slot={player['player_slot']} with player_slots={player_slots}", file=sys.stderr)
 
     return {

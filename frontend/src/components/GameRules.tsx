@@ -67,7 +67,7 @@ export default function GameRules({ isOpen, onClose }: GameRulesProps) {
                 <span className="flex-shrink-0 w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold">2</span>
                 <div>
                   <p className="font-bold text-purple-700">カード配置</p>
-                  <p className="text-sm">手札のカードを軸上に配置しながら、他のプレイヤーと議論します。全員が5枚配置したら次へ。</p>
+                  <p className="text-sm">手札のカードを軸上に配置しながら、他のプレイヤーと議論します。全員が規定枚数配置したら次へ。</p>
                 </div>
               </li>
               <li className="flex gap-3">

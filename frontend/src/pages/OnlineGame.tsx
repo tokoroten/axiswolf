@@ -12,7 +12,7 @@ import QRCode from 'qrcode';
 export default function OnlineGame() {
   const { roomCode } = useParams<{ roomCode: string }>();
   const navigate = useNavigate();
-  const { room, players, placedCards, votes, isHost, playerSlot, playerId, ws, updatePhase, updateThemes, placeCard, submitVote, fetchVotes, fetchHand, calculateResults, startNextRound } = useGame();
+  const { room, players, placedCards, votes, isHost, playerSlot, playerId, ws, updatePhase, updateThemes, updateGameSettings, placeCard, submitVote, fetchVotes, fetchHand, calculateResults, startNextRound } = useGame();
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [myAxis, setMyAxis] = useState<AxisPayload | null>(null);
   const [myHand, setMyHand] = useState<string[]>([]);
@@ -525,11 +525,10 @@ export default function OnlineGame() {
           <>
             {/* カードセット選択 */}
             {isHost && (
-              <div className="bg-gradient-to-r from-green-900 to-teal-900 p-4 rounded mb-4 border-2 border-green-500">
-                <h2 className="font-bold mb-3 text-yellow-300">🎴 カードセット選択</h2>
-                <p className="text-sm text-gray-300 mb-3">使用するカードのテーマを選んでください（複数選択可）</p>
+              <div className="bg-gradient-to-r from-green-900 to-teal-900 p-3 rounded mb-3 border-2 border-green-500">
+                <h2 className="font-bold mb-2 text-yellow-300">🎴 カードセット選択</h2>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
                   {[
                     { id: 'food', label: '食べ物', icon: '🍕' },
                     { id: 'daily', label: '日用品', icon: '📱' },
@@ -574,7 +573,7 @@ export default function OnlineGame() {
                             alert('テーマの更新に失敗しました');
                           });
                         }}
-                        className={`p-3 rounded-lg font-medium transition-all border-2 ${
+                        className={`p-2 rounded font-medium transition-all border-2 ${
                           theme.id === 'chaos'
                             ? isSelected
                               ? 'bg-purple-600 border-purple-400 text-white shadow-lg animate-pulse'
@@ -584,28 +583,11 @@ export default function OnlineGame() {
                               : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
                         }`}
                       >
-                        <div className="text-2xl mb-1">{theme.icon}</div>
-                        <div className="text-sm">{theme.label}</div>
+                        <div className="text-xl mb-0.5">{theme.icon}</div>
+                        <div className="text-xs">{theme.label}</div>
                       </button>
                     );
                   })}
-                </div>
-
-                <div className="mt-3 text-xs text-gray-400">
-                  {(() => {
-                    const currentThemes = room.themes ? JSON.parse(room.themes) : ['food', 'daily', 'entertainment'];
-                    const themeLabels = {
-                      food: '食べ物',
-                      daily: '日用品',
-                      entertainment: 'エンタメ',
-                      animal: '動物',
-                      place: '場所',
-                      vehicle: '乗り物',
-                      sport: 'スポーツ',
-                      chaos: 'カオス（全テーマ混合）',
-                    };
-                    return `現在の選択: ${currentThemes.map((t: string) => themeLabels[t as keyof typeof themeLabels] || t).join('、')}`;
-                  })()}
                 </div>
               </div>
             )}
@@ -641,6 +623,109 @@ export default function OnlineGame() {
               </div>
             )}
 
+            {/* ゲームルール設定 */}
+            {isHost && (
+              <div className="bg-gradient-to-r from-orange-900 to-amber-900 p-3 rounded mb-3 border-2 border-orange-500">
+                <h2 className="font-bold mb-2 text-yellow-300">⚙️ ゲームルール設定</h2>
+
+                {/* プリセットボタン */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  {[
+                    { hand: 1, placement: 1, label: '1/1(超短時間)' },
+                    { hand: 3, placement: 3, label: '3/3(短時間)' },
+                    { hand: 5, placement: 3, label: '3/5(標準)' },
+                    { hand: 5, placement: 5, label: '5/5(ゆっくり)' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => {
+                        updateGameSettings(preset.hand, preset.placement).catch((error) => {
+                          console.error('Failed to update game settings:', error);
+                          alert('設定の更新に失敗しました');
+                        });
+                      }}
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                        room.hand_size === preset.hand && room.required_placement_count === preset.placement
+                          ? 'bg-yellow-500 text-black'
+                          : 'bg-gray-700 text-white hover:bg-gray-600'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* カスタム設定 */}
+                <div className="space-y-2.5">
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-medium text-gray-300">配布手札</label>
+                      <span className="text-lg font-bold text-yellow-300">{room.hand_size}枚</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={room.hand_size}
+                      onChange={(e) => {
+                        const newHandSize = parseInt(e.target.value);
+                        const newPlacementCount = Math.min(room.required_placement_count, newHandSize);
+                        updateGameSettings(newHandSize, newPlacementCount).catch((error) => {
+                          console.error('Failed to update game settings:', error);
+                          alert('設定の更新に失敗しました');
+                        });
+                      }}
+                      className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-xs font-medium text-gray-300">配置必須</label>
+                      <span className="text-lg font-bold text-yellow-300">{room.required_placement_count}枚</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="1"
+                      max={room.hand_size}
+                      value={room.required_placement_count}
+                      onChange={(e) => {
+                        const newPlacementCount = parseInt(e.target.value);
+                        updateGameSettings(room.hand_size, newPlacementCount).catch((error) => {
+                          console.error('Failed to update game settings:', error);
+                          alert('設定の更新に失敗しました');
+                        });
+                      }}
+                      className="w-full h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                    />
+                  </div>
+                </div>
+
+                {/* バリデーションエラー表示 */}
+                {room.required_placement_count > room.hand_size && (
+                  <div className="mt-2 p-1.5 bg-red-900/50 border border-red-500 rounded text-xs text-red-300">
+                    ⚠️ 配置必須枚数は手札枚数以下にしてください
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ホスト以外のプレイヤー向け：ゲーム設定表示 */}
+            {!isHost && (
+              <div className="bg-gray-800 p-2.5 rounded mb-3 border-2 border-gray-700">
+                <h2 className="font-bold mb-1.5 text-sm text-gray-300">⚙️ ゲームルール設定</h2>
+                <div className="flex gap-2">
+                  <div className="bg-gray-700 px-2.5 py-1.5 rounded flex-1">
+                    <div className="text-xs text-gray-400">配布手札</div>
+                    <div className="text-base font-bold text-white">{room.hand_size}枚</div>
+                  </div>
+                  <div className="bg-gray-700 px-2.5 py-1.5 rounded flex-1">
+                    <div className="text-xs text-gray-400">配置必須</div>
+                    <div className="text-base font-bold text-white">{room.required_placement_count}枚</div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="bg-gray-800 p-4 rounded mb-4">
               <h2 className="font-bold mb-2">プレイヤー一覧</h2>
@@ -746,12 +831,12 @@ export default function OnlineGame() {
                         <span className="font-medium text-sm truncate">{player.player_name}</span>
                       </div>
                       <div className="text-xs text-gray-400">
-                        配置済み: {cardCount} / 5
+                        配置済み: {cardCount} / {room.required_placement_count}
                       </div>
                       <div className="mt-1 h-1.5 bg-gray-600 rounded-full overflow-hidden">
                         <div
                           className="h-full bg-green-500 transition-all"
-                          style={{ width: `${(cardCount / 5) * 100}%` }}
+                          style={{ width: `${(cardCount / room.required_placement_count) * 100}%` }}
                         ></div>
                       </div>
                     </div>

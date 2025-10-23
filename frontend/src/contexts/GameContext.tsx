@@ -15,9 +15,10 @@ interface GameContextType {
   isHost: boolean;
   resetGameState: () => void;
   joinRoom: (roomCode: string, playerId: string, playerName: string) => Promise<void>;
-  createRoom: (roomCode: string, playerId: string, playerName: string) => Promise<void>;
+  createRoom: (roomCode: string, playerId: string, playerName: string, handSize?: number, requiredPlacementCount?: number) => Promise<void>;
   updatePhase: (phase: string, axisPayload?: AxisPayload, wolfAxisPayload?: AxisPayload, roundSeed?: string) => Promise<void>;
   updateThemes: (themes: string[]) => Promise<void>;
+  updateGameSettings: (handSize: number, requiredPlacementCount: number) => Promise<void>;
   placeCard: (cardId: string, quadrant: number, offsets: { x: number; y: number }) => Promise<void>;
   submitVote: (targetSlot: number) => Promise<void>;
   fetchVotes: () => Promise<void>;
@@ -271,6 +272,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
             api.getRoom(room.room_code).then(async ({ room: updatedRoom }) => {
               setRoom(updatedRoom);
 
+              // ロビーに戻ったらカードと投票をクリア
+              if (updatedRoom.phase === 'lobby') {
+                setPlacedCards([]);
+                setVotes([]);
+                console.log('[GameContext/Phase] ロビーへ移行: カードと投票をクリア');
+              }
+
+              // placementフェーズに入ったらカードと投票をクリア（新規ゲーム開始）
+              if (updatedRoom.phase === 'placement') {
+                setPlacedCards([]);
+                setVotes([]);
+                console.log('[GameContext/Phase] placementフェーズへ移行: カードと投票をクリア');
+              }
+
               // 投票フェーズに入ったら投票をクリアし、カードを再同期（パケットロス対策）
               if (updatedRoom.phase === 'voting') {
                 setVotes([]);
@@ -323,6 +338,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
           case 'themes_updated':
             // テーマが更新されたらルーム情報を再取得
+            api.getRoom(room.room_code).then(({ room: newRoom }) => {
+              setRoom(newRoom);
+            });
+            break;
+
+          case 'game_settings_updated':
+            // ゲーム設定が更新されたらルーム情報を再取得
             api.getRoom(room.room_code).then(({ room: newRoom }) => {
               setRoom(newRoom);
             });
@@ -438,13 +460,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     console.log('[GameContext] 接続情報をLocalStorageに保存しました');
   };
 
-  const createRoom = async (roomCode: string, pid: string, playerName: string) => {
+  const createRoom = async (roomCode: string, pid: string, playerName: string, handSize: number = 5, requiredPlacementCount: number = 5) => {
     // 先に古いゲーム状態をクリア（新しいルームの情報を設定する前に）
     console.log('[GameContext] 新しいルーム作成前に古い状態をクリア');
     setPlacedCards([]);
     setVotes([]);
 
-    const { token } = await api.createRoom(roomCode, pid, playerName);
+    const { token } = await api.createRoom(roomCode, pid, playerName, handSize, requiredPlacementCount);
     const { room: newRoom, players: newPlayers } = await api.getRoom(roomCode);
     setRoom(newRoom);
     setPlayers(newPlayers);
@@ -470,6 +492,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const updateThemes = async (themes: string[]) => {
     if (!room) return;
     await api.updateThemes(room.room_code, themes);
+    // サーバーから最新のルーム情報を取得
+    const { room: updatedRoom } = await api.getRoom(room.room_code);
+    setRoom(updatedRoom);
+  };
+
+  const updateGameSettings = async (handSize: number, requiredPlacementCount: number) => {
+    if (!room) return;
+    await api.updateGameSettings(room.room_code, handSize, requiredPlacementCount);
     // サーバーから最新のルーム情報を取得
     const { room: updatedRoom } = await api.getRoom(room.room_code);
     setRoom(updatedRoom);
@@ -533,6 +563,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         createRoom,
         updatePhase,
         updateThemes,
+        updateGameSettings,
         placeCard,
         submitVote,
         fetchVotes,
